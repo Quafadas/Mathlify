@@ -1,0 +1,13 @@
+package build
+
+import mill._
+import mill.scalalib._
+
+/** Adds scalajs-env-jsdom-nodejs to the build classpath so that build.mill
+  * can import and use JSDOMNodeJSEnv.
+  */
+override def ivyDeps = T {
+  super.ivyDeps() ++ Agg(
+    ivy"org.scala-js::scalajs-env-jsdom-nodejs:1.1.1"
+  )
+}

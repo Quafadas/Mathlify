@@ -1,0 +1,25 @@
+package build
+
+import mill._
+import mill.scalalib._
+import mill.scalajslib._
+import mill.scalajslib.api._
+
+object mathlify extends ScalaJSModule {
+  def scalaVersion    = "3.8.1"
+  def scalaJSVersion  = "1.17.0"
+
+  def ivyDeps = Agg(
+    ivy"com.raquo::laminar::17.2.0"
+  )
+
+  object test extends ScalaJSTests with TestModule.Munit {
+    def ivyDeps = super.ivyDeps() ++ Agg(
+      ivy"org.scalameta::munit::1.0.4"
+    )
+    // Default NodeJSEnv.  For DOM tests, configure JSDOMNodeJSEnv:
+    //   1. Add ivy"org.scala-js::scalajs-env-jsdom-nodejs:1.1.1" to mill-build/build.mill
+    //   2. import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
+    //   3. override def jsEnv = new JSDOMNodeJSEnv()
+  }
+}

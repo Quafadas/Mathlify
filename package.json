@@ -1,0 +1,7 @@
+{
+  "name": "mathlify",
+  "private": true,
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  }
+}
