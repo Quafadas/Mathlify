@@ -36,14 +36,7 @@ jobs:
           key: ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-${{ hashFiles('build.mill') }}
           restore-keys: |
             ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-
-            ${{ runner.os }}-mill-
-
-      - name: Install mill
-        run: |
-          MILL_VERSION=$(cat .mill-version | tr -d '[:space:]')
-          curl -fsSL "https://github.com/com-lihaoyi/mill/releases/download/${MILL_VERSION}/mill" \
-            -o /usr/local/bin/mill
-          chmod +x /usr/local/bin/mill
+            ${{ runner.os }}-mill-      
 
       - name: Install npm dependencies (jsdom)
         run: npm ci
