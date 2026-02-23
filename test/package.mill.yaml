@@ -1,2 +1,0 @@
-extends: [build.ScalaJSTests, TestModule.Munit]
-mvnDeps: [org.scalameta::munit::1.2.2]

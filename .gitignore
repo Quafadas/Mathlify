@@ -6,4 +6,4 @@ hs_err_pid*
 
 out/*
 .metals/*
-
+node_modules/

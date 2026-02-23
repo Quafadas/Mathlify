@@ -35,7 +35,19 @@ jobs:
           java-version: '24'
 
       - name: Verify Java version
-        run: java --version        
+        run: java --version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          cache: npm
+      
+      - name: Verify Node.js version
+        run: node --version
+
+      - name: Install npm dependencies (jsdom)
+        run: npm ci
 
       # This should resolve a JVM, download dependancies and leave mill ready for use.
       - name: setup mill

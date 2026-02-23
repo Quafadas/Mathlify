@@ -1,5 +1,9 @@
 {
   "name": "mathlify",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "jsdom": "^28.1.0",
+    "jsdom-global": "^3.0.2"
+  }
 }
