@@ -6,6 +6,8 @@ typed AST and renders them as structured Laminar HTML elements.
 
 ## Note to future Simon: 
 
-https://github.com/Quafadas/Mathlify/commit/2b0d0c8bbb80e9bb2ea48271de30e6ecbd4bf35a
+At commit
 
-Is a one module build ready for AI PRs. 
+https://github.com/Quafadas/Mathlify/commit/8b4a62d67b211d062b1aa81b551d14ecf19e7b95
+
+This shoudl be a one module build for scalaJS, with a test module metals working and ready for AI PRs.
