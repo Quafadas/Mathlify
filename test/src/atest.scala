@@ -11,7 +11,7 @@ class DomApiSpec extends UnitSpec {
 
   it("HTML: parses") {
     expectNode(
-      Mathlify.divNode,
+      mathlify.divNode,
       div of (
         className is "foo bar",
         "Hello ",
