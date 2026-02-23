@@ -1,2 +1,0 @@
-extends: [build.ScalaTests, TestModule.Utest]
-mvnDeps: [munit::1.2.2]
