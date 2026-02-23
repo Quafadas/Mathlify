@@ -9,7 +9,7 @@ class DomApiSpec extends UnitSpec {
 
   color.rgb(200, 100, 0, 0.5).value == "rgb(200 100 0 / 0.5)"
 
-  it("HTML: parses") {
+  it("Correctly adds a node and tests some properties") {
     expectNode(
       mathlify.divNode,
       div of (
