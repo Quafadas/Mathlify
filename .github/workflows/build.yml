@@ -42,7 +42,7 @@ jobs:
         run: npm ci
 
       - name: Compile
-        run: ./mill mathlify.compile
+        run: ./mill compile
 
       - name: Run tests
-        run: ./mill mathlify.test
+        run: ./mill test
