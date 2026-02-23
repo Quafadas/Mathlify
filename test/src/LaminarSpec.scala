@@ -19,7 +19,7 @@ with RuleImplicits[
   SvgAttr,
   MathMlAttr,
   StyleProp,
-  CompositeAttr[_],
+  CompositeAttr[?],
 ]
 with EventSimulator {
   // === On nullable variables ===
@@ -112,7 +112,7 @@ with EventSimulator {
     new TestableMathMlAttr[V](attr.name, attr.codec.encode, attr.codec.decode)
   }
 
-  override implicit def makeCompositeKeyTestable(key: CompositeAttr[_]): TestableCompositeKey = {
+  override implicit def makeCompositeKeyTestable(key: CompositeAttr[?]): TestableCompositeKey = {
     new TestableCompositeKey(key.name, key.separator, getRawDomValue = _.getAttribute(key.name))
   }
 
