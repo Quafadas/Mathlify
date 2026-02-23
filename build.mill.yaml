@@ -7,6 +7,8 @@ scalaJSVersion: 1.20.2
 mvnDeps:
 - com.raquo::laminar::18.0.0-M3
 - org.scala-js::scalajs-dom::2.2.0
+- com.lihaoyi::fastparse::3.1.1
+- com.lihaoyi::fastparse::3.1.1
 
 # mainClass: foo.Foo2
 
