@@ -16,7 +16,7 @@
         "servers": {
           "scautable-metals": {
             "type": "sse",
-            "url": "http://localhost:49625/sse"
+            "url": "http://localhost:53081/mcp"
           }
         }
       }
