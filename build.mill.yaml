@@ -1,0 +1,26 @@
+extends: [mill.scalajslib.ScalaJSModule, PublishModule]
+
+scalaVersion: 3.8.1
+
+mvnDeps:
+- com.raquo::laminar::18.0.0-M3
+- org.scala-js::scalajs-dom::2.2.0
+
+# mainClass: foo.Foo2
+
+jvmVersion: 21s # Pin a specific JVM version, downloaded and cached automatically
+
+javacOptions: []
+forkArgs: [ ]
+forkEnv: { }
+
+# Settings to publish to Maven Central
+publishVersion: 0.0.1
+artifactName: mathlify
+pomSettings:
+  description: Mathlify
+  organization: io.github.quafadas
+  url: https://github.com/Quafadas/Mathlify
+  licenses: [Apache 2.0]
+  versionControl: https://github.com/Quafadas/Mathlify
+  developers: [{name: Simon Parten, email: quafadas@gmail.com}]
