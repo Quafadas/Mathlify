@@ -12,7 +12,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule {
     build.V.fastparse,
   )  
 
-  object `package` extends TestScalaJSModule , TestModule.ScalaTest {
+  object test extends TestScalaJSModule , TestModule.ScalaTest {
     def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
