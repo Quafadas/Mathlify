@@ -12,11 +12,11 @@ Mill is already setup for you. Currently it is configured via Mill's new YAML ba
 
 ## Folder Structure:
 
-- build.mill.yaml: Mill build configuration file.
+- build.mill: Mill build configuration file.
 - .devcontainer/: Configuration for development container.
 - .github/workflows/: GitHub Actions workflows for CI/CD.
-- src/: Source code for the project.
-- test/: Test code for the project.
+- mathlify/src/: Source code for the project.
+- mathlify/test/src: Test code for the project.
 
 ## Validation: 
 
