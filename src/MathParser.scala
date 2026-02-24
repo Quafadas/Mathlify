@@ -8,13 +8,17 @@ object MathParser:
 
   private val knownConstants = Set("pi", "e", "inf")
 
-  def number(using P[Any]): P[MathExpr] =
+  def number(using P[Any]): P[MathExpr] = {
+    import fastparse.NoWhitespace.*
     P((CharsWhileIn("0-9") ~ ("." ~ CharsWhileIn("0-9")).?).!).map { s =>
       Number(s.toDouble)
     }
+  }
 
-  def identifier(using P[Any]): P[String] =
+  def identifier(using P[Any]): P[String] = {
+    import fastparse.NoWhitespace.*
     P((CharIn("a-zA-Z") ~ CharsWhileIn("a-zA-Z0-9", 0)).!)
+  }
 
   def braceContent(using P[Any]): P[MathExpr] = P("{" ~ expr ~ "}")
 
@@ -34,35 +38,15 @@ object MathParser:
   def sqrtExpr(using P[Any]): P[MathExpr] =
     P("sqrt" ~ "(" ~ expr ~ ")").map(arg => Root(None, arg))
 
-  // Build sum/integral without a single large P(...) chain to avoid
-  // tuple-sequencer issues. Parse each piece and accumulate via flatMap.
-  def sumExpr(using P[Any]): P[MathExpr] = {
-    P("sum" ~ "_").flatMap { _ =>
-      sumIndexBound.flatMap { bound =>
-        P("^").flatMap { _ =>
-          braceOrAtom.flatMap { hi =>
-            expr.map { body =>
-              Sum(bound._1, bound._2, hi, body)
-            }
-          }
-        }
-      }
+  def sumExpr(using P[Any]): P[MathExpr] =
+    P("sum_" ~ sumIndexBound ~ "^" ~ braceOrAtom ~ expr).map { case (idx, lo, hi, body) =>
+      Sum(idx, lo, hi, body)
     }
-  }
 
-  def integralExpr(using P[Any]): P[MathExpr] = {
-    P("int" ~ "_").flatMap { _ =>
-      braceOrAtom.flatMap { lo =>
-        P("^").flatMap { _ =>
-          braceOrAtom.flatMap { hi =>
-            expr.map { body =>
-              Integral(Symbol("x"), lo, hi, body)
-            }
-          }
-        }
-      }
+  def integralExpr(using P[Any]): P[MathExpr] =
+    P("int_" ~ braceOrAtom ~ "^" ~ braceOrAtom ~ expr).map { case (lo, hi, body) =>
+      Integral(Symbol("x"), lo, hi, body)
     }
-  }
 
   def parenExpr(using P[Any]): P[MathExpr] =
     P("(" ~ expr ~ ")").map(Group(_))
