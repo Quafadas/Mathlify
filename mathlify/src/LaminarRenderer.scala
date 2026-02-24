@@ -1,7 +1,6 @@
 package mathlify
 
 import com.raquo.laminar.api.L.*
-import org.scalajs.dom
 
 object LaminarRenderer:
   def render(expr: Signal[MathExpr]): HtmlElement =
@@ -11,6 +10,15 @@ object LaminarRenderer:
           val el = ctx.thisNode.ref
           while (el.firstChild != null) el.removeChild(el.firstChild)
           el.appendChild(MathMLCompiler.toMathML(e))
-        }(ctx.owner)
+        }(using ctx.owner)
+      }
+    )
+
+  def render(expr: MathExpr): HtmlElement =
+    div(
+      onMountCallback { ctx =>
+        val el = ctx.thisNode.ref
+        while (el.firstChild != null) el.removeChild(el.firstChild)
+        el.appendChild(MathMLCompiler.toMathML(expr))
       }
     )

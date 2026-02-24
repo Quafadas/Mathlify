@@ -1,0 +1,158 @@
+package build.example
+
+import io.github.quafadas.sjsls.LiveServerConfig
+
+import mill.*, scalalib.*, scalajslib.*
+import mill.scalajslib.api.*
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import fs2.concurrent.Topic
+import mill.api.BuildCtx
+
+
+object `package` extends TestScalaJSModule , TestModule.ScalaTest {
+  def scalaVersion = build.V.scalaVersion
+  def scalaJSVersion = build.V.scalaJSVersion 
+  def moduleDeps = Seq(build.mathlify)  
+
+  def sitePathOnly = Task {
+    fastLinkJS().dest.path.toString()
+  }
+
+  /** The port number for the live-reload development server.
+    *
+    * Defaults to 8080. Override to use a different port.
+    *
+    * @return
+    *   the server port number
+    */
+  def port = Task {
+    8080
+  }
+
+  /** Whether to automatically open a browser when starting the server.
+    *
+    * Defaults to `true`. Set to `false` to disable auto-open.
+    *
+    * @return
+    *   true to open browser, false otherwise
+    */
+  def openBrowser = Task {
+    false
+  }
+
+  /** Log level for the development server.
+    *
+    * Controls verbosity of server output. Defaults to "debug".
+    *
+    * @return
+    *   the log level string
+    */
+  def logLevel = Task {
+    "debug"
+  }
+
+  override def fastLinkJS = Task {
+    BuildCtx.withFilesystemCheckerDisabled {
+      val linked = super.fastLinkJS()
+      // Notify the live-reload server to refresh when a new build is available
+      updateServer.publish1(println("publishing update")).unsafeRunSync()
+      println(linked)
+      println(Task.dest)
+      os.copy.over(linked.dest.path, Task.dest, createFolders = true, replaceExisting = true)
+      os.write.over(Task.dest / "index.html", html)
+      mill.scalajslib.api.Report(
+        publicModules = linked.publicModules,      
+        dest = PathRef(Task.dest)
+      )
+    }
+  }
+
+  val html = 
+      s"""<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mathlify</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      const sse = new EventSource("/refresh/v1/sse");
+      sse.addEventListener("message", (e) => {
+        const msg = JSON.parse(e.data);
+
+        if ("KeepAlive" in msg) console.log("KeepAlive");
+
+        if ("PageRefresh" in msg) location.reload();
+      });
+    </script>
+    <script src="main.js" type="module"></script>
+  </body>
+</html>""".stripMargin
+   
+  
+
+  // def assets = Task {
+  //   println("site assets")
+  //   os.copy.over(laika.assets().path, Task.dest)
+  //   PathRef(Task.dest)
+  // }
+
+  /** Creates the live server configuration.
+    *
+    * Configures [[io.github.quafadas.sjsls.LiveServerConfig]] with:
+    *   - Port from [[port]]
+    *   - Site directory from [[sitePathOnly]]
+    *   - Browser auto-open controlled by [[openBrowser]]
+    *   - Live-reload via [[updateServer]] topic
+    *
+    * @return
+    *   configured LiveServerConfig for the development server
+    */
+  def lcs = Task.Anon {
+    val port_ = port()
+    val sitePathOnly_ = sitePathOnly()
+    
+      LiveServerConfig(
+        baseDir = None, // typically this would be a build tool here
+        // outDir = Some(assets().path.toString()),
+        port =
+          com.comcast.ip4s.Port.fromInt(port_).getOrElse(throw new IllegalArgumentException(s"invalid port: ${port_}")),
+        indexHtmlTemplate = Some(sitePathOnly_),
+        buildTool = io.github.quafadas.sjsls.NoBuildTool(),
+        openBrowserAt = "/",
+        preventBrowserOpen = !openBrowser(),
+        customRefresh = Some(updateServer),
+        logLevel = logLevel()
+      )
+    
+  }
+
+  lazy val updateServer = Topic[IO, Unit].unsafeRunSync()
+
+  def serve = Task.Worker {
+
+    BuildCtx.withFilesystemCheckerDisabled {
+      new RefreshServer(lcs())
+    }
+  }
+
+    /** Wrapper class for the live-reload HTTP server.
+    *
+    * Manages the lifecycle of the sjsls LiveServer, providing automatic cleanup via AutoCloseable.
+    *
+    * @param lcs
+    *   the server configuration
+    */
+  class RefreshServer(lcs: LiveServerConfig) extends AutoCloseable:
+    val server = io.github.quafadas.sjsls.LiveServer.main(lcs).allocated
+
+    server.map(_._1).unsafeRunSync()
+
+    override def close(): Unit =
+      // This is the shutdown hook for http4s
+      println("Shutting down server...")
+      server.map(_._2).flatten.unsafeRunSync()
+    end close
+  end RefreshServer
+}
