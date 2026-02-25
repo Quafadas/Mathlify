@@ -208,6 +208,67 @@ object MathMLCompiler:
         msup.appendChild(compile(sup, s"$path.1"))
         msup
 
+      case Operator(sym) =>
+        val e = elem("mo", path)
+        e.appendChild(dom.document.createTextNode(sym))
+        e
+
+      case ExprSeq(exprs) =>
+        val row = elem("mrow", path)
+        exprs.zipWithIndex.foreach { case (e, i) =>
+          row.appendChild(compile(e, s"$path.$i"))
+        }
+        row
+
+      case Over(base, top) =>
+        val mover = elem("mover", path)
+        mover.appendChild(compile(base, s"$path.0"))
+        mover.appendChild(compile(top, s"$path.1"))
+        mover
+
+      case Under(base, bottom) =>
+        val munder = elem("munder", path)
+        munder.appendChild(compile(base, s"$path.0"))
+        munder.appendChild(compile(bottom, s"$path.1"))
+        munder
+
+      case SubSup(base, sub, sup) =>
+        val msubsup = elem("msubsup", path)
+        msubsup.appendChild(compile(base, s"$path.0"))
+        msubsup.appendChild(compile(sub, s"$path.1"))
+        msubsup.appendChild(compile(sup, s"$path.2"))
+        msubsup
+
+      case Style(variant, content) =>
+        val mstyle = elem("mstyle", path)
+        mstyle.setAttribute("mathvariant", variant)
+        mstyle.appendChild(compile(content, s"$path.0"))
+        mstyle
+
+      case TextNode(content) =>
+        val e = elem("mtext", path)
+        e.appendChild(dom.document.createTextNode(content))
+        e
+
+      case BracketGroup(open, close, content) =>
+        val row = elem("mrow", path)
+        if open.nonEmpty  then row.appendChild(moElem(open,  s"$path.open"))
+        row.appendChild(compile(content, s"$path.0"))
+        if close.nonEmpty then row.appendChild(moElem(close, s"$path.close"))
+        row
+
+      case Enclose(notation, content) =>
+        val menclose = elem("menclose", path)
+        menclose.setAttribute("notation", notation)
+        menclose.appendChild(compile(content, s"$path.0"))
+        menclose
+
+      case Color(color, content) =>
+        val mstyle = elem("mstyle", path)
+        mstyle.setAttribute("mathcolor", color)
+        mstyle.appendChild(compile(content, s"$path.0"))
+        mstyle
+
   def toMathML(expr: MathExpr): Element =
     val math = dom.document.createElementNS(NS, "math")
     math.setAttribute("data-mathlify-id", "root")
