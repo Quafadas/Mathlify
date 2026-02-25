@@ -331,7 +331,7 @@ class MathExprSpec extends AnyFunSuite:
   }
 
   test("AsciiMath: power x^2") {
-    assert(AsciiMath.translate("x^2") == Right(Pow(Symbol("x"), Number(2.0))))
+    assert(AsciiMath.translate("x^2") == Right(Superscript(Symbol("x"), Number(2.0))))
   }
 
   test("AsciiMath: subscript x_1") {
@@ -339,12 +339,15 @@ class MathExprSpec extends AnyFunSuite:
   }
 
   test("AsciiMath: RR becomes Constant(ℝ)") {
-    assert(AsciiMath.translate("RR") == Right(Constant("ℝ")))
+    assert(AsciiMath.translate("RR") == Right(Operator("ℝ")))
   }
 
   test("AsciiMath: sum_(i=1)^n x produces Sum") {
     assert(
       AsciiMath.translate("sum_(i=1)^n x") ==
-        Right(Sum(Symbol("i"), Number(1.0), Symbol("n"), Symbol("x")))
+        Right(ExprSeq(List(
+          SubSup(Operator("∑"), ExprSeq(List(Symbol("i"), Operator("="), Number(1.0))), Symbol("n")),
+          Symbol("x")
+        )))
     )
   }

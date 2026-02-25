@@ -39,3 +39,15 @@ object MathExpr:
   // Annotations
   case class Subscript(base: MathExpr, sub: MathExpr) extends MathExpr
   case class Superscript(base: MathExpr, sup: MathExpr) extends MathExpr
+
+  // AsciiMath-specific nodes
+  case class Operator(symbol: String) extends MathExpr
+  case class ExprSeq(exprs: List[MathExpr]) extends MathExpr
+  case class Over(base: MathExpr, top: MathExpr) extends MathExpr
+  case class Under(base: MathExpr, bottom: MathExpr) extends MathExpr
+  case class SubSup(base: MathExpr, sub: MathExpr, sup: MathExpr) extends MathExpr
+  case class Style(variant: String, content: MathExpr) extends MathExpr
+  case class TextNode(content: String) extends MathExpr
+  case class BracketGroup(open: String, close: String, content: MathExpr) extends MathExpr
+  case class Enclose(notation: String, content: MathExpr) extends MathExpr
+  case class Color(color: String, content: MathExpr) extends MathExpr
