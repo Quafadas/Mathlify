@@ -293,7 +293,8 @@ class EvaluatorSpec extends AnyFunSuite:
     )
     foldConstants(expr) match
       case ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0))) => ()
-      case other => fail(s"expected ExprSeq([sqrt(x), +, 7]) but got $other")
+      case other                                                              => fail(s"expected ExprSeq([sqrt(x), +, 7]) but got $other")
+    end match
   }
 
   test("partialEval: ExprSeq sqrt(x) + 2*3 + 1 returns PartiallyReduced with sqrt(x) + 7") {
@@ -302,7 +303,8 @@ class EvaluatorSpec extends AnyFunSuite:
     )
     partialEval(expr) match
       case PartiallyReduced(ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0)))) => ()
-      case other => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
+      case other                                                                                => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
+    end match
   }
 
   test("partialEval: AsciiMath 'sqrt(x) + 2 * 3 + 1' partially reduces to sqrt(x) + 7") {
@@ -310,7 +312,7 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) =>
         partialEval(expr) match
           case PartiallyReduced(ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0)))) => ()
-          case other => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
+          case other                                                                                => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
       case Left(err) => fail(s"parse error: $err")
   }
 
@@ -324,14 +326,16 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = ExprSeq(List(Symbol("x"), Operator("+"), Number(3.0), Operator("+"), Number(4.0)))
     foldConstants(expr) match
       case ExprSeq(List(Symbol("x"), Operator("+"), Number(7.0))) => ()
-      case other => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+      case other                                                  => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+    end match
   }
 
   test("foldConstants: ExprSeq constant subtraction combined: x + 10 - 3 = x + 7") {
     val expr = ExprSeq(List(Symbol("x"), Operator("+"), Number(10.0), Operator("-"), Number(3.0)))
     foldConstants(expr) match
       case ExprSeq(List(Symbol("x"), Operator("+"), Number(7.0))) => ()
-      case other => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+      case other                                                  => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+    end match
   }
 
   // ── 11. Partial reduction: distribute multiplication over addition ─────────
@@ -346,7 +350,8 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = Mul(Number(2.0), Group(Add(Add(Symbol("x"), Number(3.0)), Number(4.0))))
     partialEval(expr) match
       case PartiallyReduced(Add(Mul(Number(2.0), Symbol("x")), Number(14.0))) => ()
-      case other => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
+      case other                                                              => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
+    end match
   }
 
   test("partialEval: MathParser 2*(x+3+4) reduces to 2*x + 14") {
@@ -354,7 +359,7 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) =>
         partialEval(expr) match
           case PartiallyReduced(Add(Mul(Number(2.0), Symbol("x")), Number(14.0))) => ()
-          case other => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
+          case other                                                              => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
       case Left(err) => fail(s"parse error: $err")
   }
 
@@ -366,5 +371,53 @@ class EvaluatorSpec extends AnyFunSuite:
   test("foldConstants: (x + 3) + 4 collects constants to x + 7") {
     val expr = Add(Add(Symbol("x"), Number(3.0)), Number(4.0))
     assert(foldConstants(expr) == Add(Symbol("x"), Number(7.0)))
+  }
+
+  // ── 12. parseConstant ──────────────────────────────────────────────────────
+
+  test("parseConstant: plain number '42' gives Some(42.0)") {
+    assert(parseConstant("42") == Some(42.0))
+  }
+
+  test("parseConstant: decimal '3.14' gives Some(3.14)") {
+    assert(parseConstant("3.14") == Some(3.14))
+  }
+
+  test("parseConstant: 'pi' gives Some(math.Pi)") {
+    parseConstant("pi") match
+      case Some(v) => assert(math.abs(v - math.Pi) <= 1e-12)
+      case None    => fail("expected Some(math.Pi) but got None")
+  }
+
+  test("parseConstant: '2*pi' gives Some(2 * math.Pi)") {
+    parseConstant("2*pi") match
+      case Some(v) => assert(math.abs(v - 2 * math.Pi) <= 1e-12)
+      case None    => fail("expected Some(2*Pi) but got None")
+  }
+
+  test("parseConstant: 'pi/2' gives Some(math.Pi / 2)") {
+    parseConstant("pi/2") match
+      case Some(v) => assert(math.abs(v - math.Pi / 2) <= 1e-12)
+      case None    => fail("expected Some(Pi/2) but got None")
+  }
+
+  test("parseConstant: 'e' gives Some(math.E)") {
+    parseConstant("e") match
+      case Some(v) => assert(math.abs(v - math.E) <= 1e-12)
+      case None    => fail("expected Some(math.E) but got None")
+  }
+
+  test("parseConstant: 'sqrt(2)' gives Some(sqrt(2))") {
+    parseConstant("sqrt(2)") match
+      case Some(v) => assert(math.abs(v - math.sqrt(2)) <= 1e-12)
+      case None    => fail("expected Some(sqrt(2)) but got None")
+  }
+
+  test("parseConstant: expression with free variable 'x+1' gives None") {
+    assert(parseConstant("x+1") == None)
+  }
+
+  test("parseConstant: free variable alone 'x' gives None") {
+    assert(parseConstant("x") == None)
   }
 end EvaluatorSpec

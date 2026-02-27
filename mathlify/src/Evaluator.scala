@@ -52,14 +52,14 @@ object Evaluator:
   def foldConstants(expr: MathExpr): MathExpr = expr match
     case Add(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b))              => Number(a + b)
-        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 + c2)))
-        case (fl, fr)                            => Add(fl, fr)
+        case (Number(a), Number(b))             => Number(a + b)
+        case (Add(fl2, Number(c1)), Number(c2)) => foldConstants(Add(fl2, Number(c1 + c2)))
+        case (fl, fr)                           => Add(fl, fr)
     case Sub(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b))              => Number(a - b)
-        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 - c2)))
-        case (fl, fr)                            => Sub(fl, fr)
+        case (Number(a), Number(b))             => Number(a - b)
+        case (Add(fl2, Number(c1)), Number(c2)) => foldConstants(Add(fl2, Number(c1 - c2)))
+        case (fl, fr)                           => Sub(fl, fr)
     case Mul(l, r) =>
       (foldConstants(l), foldConstants(r)) match
         case (Number(a), Number(b))                             => Number(a * b)
@@ -118,7 +118,55 @@ object Evaluator:
       simplifyExprSeq(folded) match
         case List(e) => e
         case other   => ExprSeq(other)
+      end match
     case other => other
+
+  // ── Symbolic constant substitution ───────────────────────────────────────
+
+  // Well-known constants that AsciiMath emits as Symbol nodes (e.g. "pi" → Symbol("π")).
+  private val symbolicConstants: Map[String, Double] = Map(
+    "π" -> math.Pi,
+    "e" -> math.E
+  )
+
+  // Well-known constants emitted as Operator nodes (e.g. "infty" → Operator("∞")).
+  private val operatorConstants: Map[String, Double] = Map(
+    "∞" -> Double.PositiveInfinity
+  )
+
+  /** Replace known symbolic/operator constant tokens with their numeric values. */
+  private def substituteConstants(expr: MathExpr): MathExpr = expr match
+    case Symbol(n) if symbolicConstants.contains(n)   => Number(symbolicConstants(n))
+    case Operator(s) if operatorConstants.contains(s) => Number(operatorConstants(s))
+    case Add(l, r)                                    => Add(substituteConstants(l), substituteConstants(r))
+    case Sub(l, r)                                    => Sub(substituteConstants(l), substituteConstants(r))
+    case Mul(l, r)                                    => Mul(substituteConstants(l), substituteConstants(r))
+    case Div(l, r)                                    => Div(substituteConstants(l), substituteConstants(r))
+    case Pow(b, e)                                    => Pow(substituteConstants(b), substituteConstants(e))
+    case Neg(e)                                       => Neg(substituteConstants(e))
+    case FunctionCall(n, args)                        => FunctionCall(n, args.map(substituteConstants))
+    case Fraction(n, d)                               => Fraction(substituteConstants(n), substituteConstants(d))
+    case Root(None, r)                                => Root(None, substituteConstants(r))
+    case Root(Some(d), r)                             => Root(Some(substituteConstants(d)), substituteConstants(r))
+    case Group(e)                                     => Group(substituteConstants(e))
+    case ExprSeq(es)                                  => ExprSeq(es.map(substituteConstants))
+    case BracketGroup(o, c, e)                        => BracketGroup(o, c, substituteConstants(e))
+    case other                                        => other
+
+  /** Parse an AsciiMath string and evaluate it to a constant Double if possible.
+    *
+    * Recognises well-known mathematical constants (π, e, ∞) in addition to numeric literals and arithmetic, so expressions such as "pi", "2*pi", "e^2" and "sqrt(2)" are accepted.
+    *
+    * @return
+    *   Some(value) when the expression is a closed constant expression, None when the expression contains free variables or cannot be evaluated numerically.
+    */
+  def parseConstant(input: String): Option[Double] =
+    AsciiMath.translate(input.trim) match
+      case Left(_)     => None
+      case Right(expr) =>
+        eval(substituteConstants(expr)) match
+          case Numeric(v) => Some(v)
+          case _          => None
 
   // ── Full evaluation ───────────────────────────────────────────────────────
 
@@ -323,6 +371,7 @@ object Evaluator:
       e match
         case Operator(s @ ("+" | "-")) => flush(); currentOp = Some(s)
         case other                     => currentTermsRev = other :: currentTermsRev
+    end for
     flush()
     val segments = segmentsRev.reverse
 
@@ -343,10 +392,10 @@ object Evaluator:
         acc: List[(Option[String], Either[Double, List[MathExpr]])]
     ): List[(Option[String], Either[Double, List[MathExpr]])] =
       items match
-        case Nil => acc.reverse
+        case Nil                                        => acc.reverse
         case (op1, Left(v1)) :: (op2, Left(v2)) :: rest =>
-          val s1    = if op1.contains("-") then -v1 else v1
-          val s2    = if op2.contains("-") then -v2 else v2
+          val s1 = if op1.contains("-") then -v1 else v1
+          val s2 = if op2.contains("-") then -v2 else v2
           val total = s1 + s2
           val merged: (Option[String], Either[Double, List[MathExpr]]) = op1 match
             case None    => (None, Left(total))
