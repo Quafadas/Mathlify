@@ -367,4 +367,52 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = Add(Add(Symbol("x"), Number(3.0)), Number(4.0))
     assert(foldConstants(expr) == Add(Symbol("x"), Number(7.0)))
   }
+
+  // ── 12. parseConstant ──────────────────────────────────────────────────────
+
+  test("parseConstant: plain number '42' gives Some(42.0)") {
+    assert(parseConstant("42") == Some(42.0))
+  }
+
+  test("parseConstant: decimal '3.14' gives Some(3.14)") {
+    assert(parseConstant("3.14") == Some(3.14))
+  }
+
+  test("parseConstant: 'pi' gives Some(math.Pi)") {
+    parseConstant("pi") match
+      case Some(v) => assert(math.abs(v - math.Pi) <= 1e-12)
+      case None    => fail("expected Some(math.Pi) but got None")
+  }
+
+  test("parseConstant: '2*pi' gives Some(2 * math.Pi)") {
+    parseConstant("2*pi") match
+      case Some(v) => assert(math.abs(v - 2 * math.Pi) <= 1e-12)
+      case None    => fail("expected Some(2*Pi) but got None")
+  }
+
+  test("parseConstant: 'pi/2' gives Some(math.Pi / 2)") {
+    parseConstant("pi/2") match
+      case Some(v) => assert(math.abs(v - math.Pi / 2) <= 1e-12)
+      case None    => fail("expected Some(Pi/2) but got None")
+  }
+
+  test("parseConstant: 'e' gives Some(math.E)") {
+    parseConstant("e") match
+      case Some(v) => assert(math.abs(v - math.E) <= 1e-12)
+      case None    => fail("expected Some(math.E) but got None")
+  }
+
+  test("parseConstant: 'sqrt(2)' gives Some(sqrt(2))") {
+    parseConstant("sqrt(2)") match
+      case Some(v) => assert(math.abs(v - math.sqrt(2)) <= 1e-12)
+      case None    => fail("expected Some(sqrt(2)) but got None")
+  }
+
+  test("parseConstant: expression with free variable 'x+1' gives None") {
+    assert(parseConstant("x+1") == None)
+  }
+
+  test("parseConstant: free variable alone 'x' gives None") {
+    assert(parseConstant("x") == None)
+  }
 end EvaluatorSpec
