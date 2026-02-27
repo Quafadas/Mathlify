@@ -261,4 +261,53 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) => assertNumeric(eval(expr), 20.0)
       case Left(err)   => fail(s"parse error: $err")
   }
+
+  // ── 10. Partial reduction of ExprSeq (issue: constants not folded) ─────────
+
+  test("foldConstants: ExprSeq sqrt(x) + 2*3 + 1 reduces constant tail to 7") {
+    val expr = ExprSeq(
+      List(Root(None, Symbol("x")), Operator("+"), Number(2.0), Operator("*"), Number(3.0), Operator("+"), Number(1.0))
+    )
+    foldConstants(expr) match
+      case ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0))) => ()
+      case other => fail(s"expected ExprSeq([sqrt(x), +, 7]) but got $other")
+  }
+
+  test("partialEval: ExprSeq sqrt(x) + 2*3 + 1 returns PartiallyReduced with sqrt(x) + 7") {
+    val expr = ExprSeq(
+      List(Root(None, Symbol("x")), Operator("+"), Number(2.0), Operator("*"), Number(3.0), Operator("+"), Number(1.0))
+    )
+    partialEval(expr) match
+      case PartiallyReduced(ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0)))) => ()
+      case other => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
+  }
+
+  test("partialEval: AsciiMath 'sqrt(x) + 2 * 3 + 1' partially reduces to sqrt(x) + 7") {
+    AsciiMath.translate("sqrt(x) + 2 * 3 + 1") match
+      case Right(expr) =>
+        partialEval(expr) match
+          case PartiallyReduced(ExprSeq(List(Root(None, Symbol("x")), Operator("+"), Number(7.0)))) => ()
+          case other => fail(s"expected PartiallyReduced(ExprSeq([sqrt(x), +, 7])) but got $other")
+      case Left(err) => fail(s"parse error: $err")
+  }
+
+  test("partialEval: AsciiMath 'sqrt(x) + 2 * 3 + 1' with x=4 evaluates to 9") {
+    AsciiMath.translate("sqrt(x) + 2 * 3 + 1") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 4.0)), 9.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("foldConstants: ExprSeq adjacent constant terms at end are combined") {
+    val expr = ExprSeq(List(Symbol("x"), Operator("+"), Number(3.0), Operator("+"), Number(4.0)))
+    foldConstants(expr) match
+      case ExprSeq(List(Symbol("x"), Operator("+"), Number(7.0))) => ()
+      case other => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+  }
+
+  test("foldConstants: ExprSeq constant subtraction combined: x + 10 - 3 = x + 7") {
+    val expr = ExprSeq(List(Symbol("x"), Operator("+"), Number(10.0), Operator("-"), Number(3.0)))
+    foldConstants(expr) match
+      case ExprSeq(List(Symbol("x"), Operator("+"), Number(7.0))) => ()
+      case other => fail(s"expected ExprSeq([x, +, 7]) but got $other")
+  }
 end EvaluatorSpec

@@ -100,6 +100,11 @@ object Evaluator:
       (foldConstants(n), foldConstants(d)) match
         case (Number(a), Number(b)) if b != 0.0 => Number(a / b)
         case (fn, fd)                           => Fraction(fn, fd)
+    case ExprSeq(exprs) =>
+      val folded = exprs.map(foldConstants)
+      simplifyExprSeq(folded) match
+        case List(e) => e
+        case other   => ExprSeq(other)
     case other => other
 
   // ── Full evaluation ───────────────────────────────────────────────────────
@@ -284,4 +289,69 @@ object Evaluator:
     else result
     end if
   end evalInfixSeq
+
+  // ── ExprSeq constant simplification ──────────────────────────────────────
+
+  private def simplifyExprSeq(exprs: List[MathExpr]): List[MathExpr] =
+    // Split the flat infix sequence at top-level + and - operators into
+    // additive segments: (leadingOp: Option[String], terms: List[MathExpr]).
+    // leadingOp is None for the first segment, Some("+") / Some("-") for the rest.
+    // Build lists by prepending and reversing to avoid O(n²) appends.
+    var segmentsRev = List.empty[(Option[String], List[MathExpr])]
+    var currentOp: Option[String] = None
+    var currentTermsRev: List[MathExpr] = Nil
+
+    def flush(): Unit =
+      if currentTermsRev.nonEmpty then
+        segmentsRev = (currentOp, currentTermsRev.reverse) :: segmentsRev
+        currentTermsRev = Nil
+
+    for e <- exprs do
+      e match
+        case Operator(s @ ("+" | "-")) => flush(); currentOp = Some(s)
+        case other                     => currentTermsRev = other :: currentTermsRev
+    flush()
+    val segments = segmentsRev.reverse
+
+    // For each segment, attempt evaluation if it contains no free variables.
+    val evaluated: List[(Option[String], Either[Double, List[MathExpr]])] =
+      segments.map { case (op, terms) =>
+        if terms.exists(e => freeVars(e).nonEmpty) then (op, Right(terms))
+        else
+          evalInfixSeq(terms, Map.empty) match
+            case Numeric(v) => (op, Left(v))
+            case _          => (op, Right(terms))
+      }
+
+    // Merge consecutive constant segments by summing their signed values.
+    @annotation.tailrec
+    def mergeConsts(
+        items: List[(Option[String], Either[Double, List[MathExpr]])],
+        acc: List[(Option[String], Either[Double, List[MathExpr]])]
+    ): List[(Option[String], Either[Double, List[MathExpr]])] =
+      items match
+        case Nil => acc.reverse
+        case (op1, Left(v1)) :: (op2, Left(v2)) :: rest =>
+          val s1    = if op1.contains("-") then -v1 else v1
+          val s2    = if op2.contains("-") then -v2 else v2
+          val total = s1 + s2
+          val merged: (Option[String], Either[Double, List[MathExpr]]) = op1 match
+            case None    => (None, Left(total))
+            case Some(_) => if total >= 0 then (Some("+"), Left(total)) else (Some("-"), Left(-total))
+          mergeConsts(merged :: rest, acc)
+        case item :: rest => mergeConsts(rest, item :: acc)
+
+    val merged = mergeConsts(evaluated, Nil)
+
+    // Reassemble into a flat list of MathExpr tokens.
+    merged.flatMap {
+      case (None, Left(v))          => List(Number(v))
+      case (Some("+"), Left(v))     => List(Operator("+"), Number(v))
+      case (Some("-"), Left(v))     => List(Operator("-"), Number(v))
+      case (Some(op), Left(v))      => List(Operator(op), Number(v))
+      case (None, Right(terms))     => terms
+      case (Some(op), Right(terms)) => Operator(op) :: terms
+    }
+  end simplifyExprSeq
+
 end Evaluator
