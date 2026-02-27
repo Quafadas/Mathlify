@@ -9,7 +9,8 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   def mvnDeps = Seq(
     build.V.jsDom,
     build.V.laminar,
-    build.V.fastparse
+    build.V.fastparse,
+    build.V.vecxt
   )
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:

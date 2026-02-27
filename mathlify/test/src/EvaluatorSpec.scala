@@ -418,4 +418,73 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) => assert(freeVars(expr) == Set("x", "y"))
       case Left(err)   => fail(s"parse error: $err")
   }
+
+  // ── 14. Matrix evaluation ─────────────────────────────────────────────────
+
+  private def assertMatrix(result: EvalResult, expected: Vector[Vector[Double]], tol: Double = 1e-9): Unit =
+    result match
+      case MatrixResult(value) =>
+        assert(value.length == expected.length, s"row count mismatch: ${value.length} != ${expected.length}")
+        value.zip(expected).zipWithIndex.foreach { case ((row, expRow), i) =>
+          assert(row.length == expRow.length, s"col count mismatch at row $i")
+          row.zip(expRow).zipWithIndex.foreach { case ((v, e), j) =>
+            assert(math.abs(v - e) <= tol, s"element ($i,$j): expected $e but got $v")
+          }
+        }
+      case other => fail(s"expected MatrixResult but got $other")
+
+  test("eval: 2x2 matrix literal evaluates to MatrixResult") {
+    val m = MathExpr.Matrix(
+      List(Number(1.0), Number(2.0), Number(3.0), Number(4.0)),
+      2,
+      2,
+      2,
+      1,
+      0
+    )
+    assertMatrix(eval(m), Vector(Vector(1.0, 2.0), Vector(3.0, 4.0)))
+  }
+
+  test("eval: matrix product [[1,2],[3,4]] * [[1,2],[3,4]] = [[7,10],[15,22]]") {
+    AsciiMath.translate("[[1,2],[3,4]]*[[1,2],[3,4]]") match
+      case Right(expr) => assertMatrix(eval(expr), Vector(Vector(7.0, 10.0), Vector(15.0, 22.0)))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: matrix product [[1,0],[0,1]] * [[5,6],[7,8]] = [[5,6],[7,8]] (identity)") {
+    AsciiMath.translate("[[1,0],[0,1]]*[[5,6],[7,8]]") match
+      case Right(expr) => assertMatrix(eval(expr), Vector(Vector(5.0, 6.0), Vector(7.0, 8.0)))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: non-square matrix product [[1,2,3],[4,5,6]] * [[7,8],[9,10],[11,12]] = [[58,64],[139,154]]") {
+    val a = MathExpr.Matrix(
+      List(Number(1.0), Number(2.0), Number(3.0), Number(4.0), Number(5.0), Number(6.0)),
+      2,
+      3,
+      3,
+      1,
+      0
+    )
+    val b = MathExpr.Matrix(
+      List(Number(7.0), Number(8.0), Number(9.0), Number(10.0), Number(11.0), Number(12.0)),
+      3,
+      2,
+      2,
+      1,
+      0
+    )
+    assertMatrix(eval(MathExpr.Mul(a, b)), Vector(Vector(58.0, 64.0), Vector(139.0, 154.0)))
+  }
+
+  test("eval: matrix dimension mismatch returns EvalError") {
+    val a = MathExpr.Matrix(List(Number(1.0), Number(2.0)), 1, 2, 2, 1, 0)
+    val b = MathExpr.Matrix(List(Number(1.0), Number(2.0)), 1, 2, 2, 1, 0)
+    assertError(eval(MathExpr.Mul(a, b)))
+  }
+
+  test("freeVars: matrix with variable element has free vars") {
+    val m = MathExpr.Matrix(List(Symbol("x"), Number(1.0)), 1, 2, 2, 1, 0)
+    assert(freeVars(m) == Set("x"))
+  }
 end EvaluatorSpec
