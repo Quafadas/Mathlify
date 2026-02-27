@@ -446,73 +446,75 @@ class AsciiMathSpec extends AnyFunSuite:
       case Left(err) => fail(s"parse error: $err")
   }
 
-  // ── 18. Matrix ────────────────────────────────────────────────────────────
+  // ── 18. Column vectors / matrices ────────────────────────────────────────
 
-  test("AM: [[a,b],[c,d]] -> matrix") {
+  test("AM: ((a),(b)) -> column vector") {
     check(
-      "[[a,b],[c,d]]",
-      BracketGroup(
-        "[",
-        "]",
-        Matrix(
-          List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
-          2,
-          2,
-          2,
-          1,
-          0
-        )
-      )
+      "((a),(b))",
+      BracketGroup("(", ")", Matrix(
+        List(Symbol("a"), Symbol("b")),
+        2, 1, 1, 1, 0
+      ))
     )
   }
 
-  test("AM: [[1,2],[3,4],[5,6]] -> 3x2 matrix") {
+  test("AM: ((a,b),(c,d)) -> 2x2 matrix") {
+    check(
+      "((a,b),(c,d))",
+      BracketGroup("(", ")", Matrix(
+        List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+        2, 2, 2, 1, 0
+      ))
+    )
+  }
+
+  test("AM: ((a)) -> nested brackets, not a matrix") {
+    check("((a))", BracketGroup("(", ")", BracketGroup("(", ")", Symbol("a"))))
+  }
+
+  test("MathML: ((a),(b)) produces mtable inside mrow") {
+    AsciiMath.translate("((a),(b))") match
+      case Right(ast) =>
+        val math = MathMLCompiler.toMathML(ast)
+        val mrow = math.firstChild.asInstanceOf[dom.Element]
+        assert(mrow.tagName.toLowerCase == "mrow", s"expected mrow, got ${mrow.tagName}")
+        assert(mrow.childNodes.length == 3, s"expected 3 children, got ${mrow.childNodes.length}")
+        val mtable = mrow.childNodes(1).asInstanceOf[dom.Element]
+        assert(mtable.tagName.toLowerCase == "mtable", s"expected mtable, got ${mtable.tagName}")
+        assert(mtable.childNodes.length == 2, s"expected 2 rows, got ${mtable.childNodes.length}")
+      case Left(err) => fail(s"parse error: $err")
+  }
+
+  // ── 19. Row matrices with square brackets ─────────────────────────────────
+
+  test("AM: [[a,b],[c,d]] -> 2x2 matrix with square brackets") {
+    check(
+      "[[a,b],[c,d]]",
+      BracketGroup("[", "]", Matrix(
+        List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+        2, 2, 2, 1, 0
+      ))
+    )
+  }
+
+  test("AM: [[1,2],[3,4],[5,6]] -> 3x2 matrix with square brackets") {
     check(
       "[[1,2],[3,4],[5,6]]",
-      BracketGroup(
-        "[",
-        "]",
-        Matrix(
-          List(Number(1.0), Number(2.0), Number(3.0), Number(4.0), Number(5.0), Number(6.0)),
-          3,
-          2,
-          2,
-          1,
-          0
-        )
-      )
+      BracketGroup("[", "]", Matrix(
+        List(Number(1.0), Number(2.0), Number(3.0), Number(4.0), Number(5.0), Number(6.0)),
+        3, 2, 2, 1, 0
+      ))
     )
   }
 
   test("AM: [[a,b]] (single row) -> plain bracket group, not matrix") {
     check(
       "[[a,b]]",
-      BracketGroup(
-        "[",
-        "]",
-        BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b"))))
-      )
+      BracketGroup("[", "]", BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b")))))
     )
   }
 
-  test("AM: [[a,b],[c]] (inconsistent columns) -> plain bracket group, not matrix") {
-    check(
-      "[[a,b],[c]]",
-      BracketGroup(
-        "[",
-        "]",
-        ExprSeq(
-          List(
-            BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b")))),
-            Operator(","),
-            BracketGroup("[", "]", Symbol("c"))
-          )
-        )
-      )
-    )
-  }
-
-  test("MathML: [[a,b],[c,d]] produces mrow with mtable inside brackets") {
+  test("MathML: [[a,b],[c,d]] produces mrow with mtable inside square brackets") {
     AsciiMath.translate("[[a,b],[c,d]]") match
       case Right(ast) =>
         val math = MathMLCompiler.toMathML(ast)
