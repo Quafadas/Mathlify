@@ -9,6 +9,7 @@ Mill is already setup for you. Currently it is configured via Mill's new YAML ba
 - Format: ./mill mill.scalalib.scalafmt.ScalafmtModule/
 - Explore: ./mill resolve _ 
 
+Always format before committing - CI will fail without correct formatting.
 
 ## Folder Structure:
 
