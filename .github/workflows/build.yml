@@ -38,6 +38,9 @@ jobs:
             ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-
             ${{ runner.os }}-mill-      
 
+      - name: formatCheck        
+        run: ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+
       - name: Install npm dependencies (jsdom)
         run: npm ci
 
