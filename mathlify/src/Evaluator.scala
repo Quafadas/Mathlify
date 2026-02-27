@@ -41,6 +41,9 @@ object Evaluator:
   def isClosed(expr: MathExpr): Boolean =
     freeVars(expr).isEmpty
 
+  def unboundVars(expr: MathExpr, env: Map[String, Double] = Map.empty): Set[String] =
+    freeVars(expr) -- env.keySet
+
   def isEvaluable(expr: MathExpr, env: Map[String, Double]): Boolean =
     freeVars(expr).subsetOf(env.keySet)
 
