@@ -28,15 +28,23 @@ object Evaluator:
     case Subscript(b, s)              => freeVars(b) ++ freeVars(s)
     case Superscript(b, s)            => freeVars(b) ++ freeVars(s)
     case Operator(_)                  => Set.empty
-    case ExprSeq(exprs)               => exprs.flatMap(freeVars).toSet
-    case Over(b, t)                   => freeVars(b) ++ freeVars(t)
-    case Under(b, bot)                => freeVars(b) ++ freeVars(bot)
-    case SubSup(b, s, sup)            => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
-    case Style(_, c)                  => freeVars(c)
-    case TextNode(_)                  => Set.empty
-    case BracketGroup(_, _, c)        => freeVars(c)
-    case Enclose(_, c)                => freeVars(c)
-    case Color(_, c)                  => freeVars(c)
+    case ExprSeq(exprs)               =>
+      def goSeq(items: List[MathExpr]): Set[String] = items match
+        case Nil                                                   => Set.empty
+        case Symbol(_) :: (bg @ BracketGroup("(", ")", _)) :: rest =>
+          // Symbol followed by ( ) is a function application: the function name
+          // is not a free variable, but the arguments are.
+          freeVars(bg) ++ goSeq(rest)
+        case head :: rest => freeVars(head) ++ goSeq(rest)
+      goSeq(exprs)
+    case Over(b, t)            => freeVars(b) ++ freeVars(t)
+    case Under(b, bot)         => freeVars(b) ++ freeVars(bot)
+    case SubSup(b, s, sup)     => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
+    case Style(_, c)           => freeVars(c)
+    case TextNode(_)           => Set.empty
+    case BracketGroup(_, _, c) => freeVars(c)
+    case Enclose(_, c)         => freeVars(c)
+    case Color(_, c)           => freeVars(c)
 
   def isClosed(expr: MathExpr): Boolean =
     freeVars(expr).isEmpty
@@ -234,6 +242,12 @@ object Evaluator:
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Pow")
+    case Superscript(b, e) =>
+      (evaluateNumeric(b, env), evaluateNumeric(e, env)) match
+        case (Numeric(a), Numeric(n)) => Numeric(math.pow(a, n))
+        case (e: EvalError, _)        => e
+        case (_, e: EvalError)        => e
+        case _                        => EvalError("Unexpected partial result in Superscript")
     case Neg(e) =>
       evaluateNumeric(e, env) match
         case Numeric(a)   => Numeric(-a)
@@ -329,6 +343,15 @@ object Evaluator:
             case (e: EvalError, _) => e
             case (_, e: EvalError) => e
             case _                 => EvalError("Cannot divide")
+          parseMulRest(combined, remaining)
+        case (head :: _) if !head.isInstanceOf[Operator] =>
+          // Implicit multiplication: two adjacent non-operator terms (e.g. 5x)
+          val (rv, remaining) = parsePrimary(items)
+          val combined = (left, rv) match
+            case (Numeric(a), Numeric(b)) => Numeric(a * b)
+            case (e: EvalError, _)        => e
+            case (_, e: EvalError)        => e
+            case _                        => EvalError("Cannot multiply (implicit)")
           parseMulRest(combined, remaining)
         case _ => (left, items)
 

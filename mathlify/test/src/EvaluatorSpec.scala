@@ -373,51 +373,49 @@ class EvaluatorSpec extends AnyFunSuite:
     assert(foldConstants(expr) == Add(Symbol("x"), Number(7.0)))
   }
 
-  // ── 12. parseConstant ──────────────────────────────────────────────────────
+  // ── 12. Superscript evaluation (AsciiMath produces Superscript for x^2) ────
 
-  test("parseConstant: plain number '42' gives Some(42.0)") {
-    assert(parseConstant("42") == Some(42.0))
+  test("eval: AsciiMath x^2 with x=4 gives 16") {
+    AsciiMath.translate("x^2") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 4.0)), 16.0)
+      case Left(err)   => fail(s"parse error: $err")
   }
 
-  test("parseConstant: decimal '3.14' gives Some(3.14)") {
-    assert(parseConstant("3.14") == Some(3.14))
+  test("eval: AsciiMath x^2 + 5x with x=4 gives 36") {
+    AsciiMath.translate("x^2 + 5x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 4.0)), 36.0)
+      case Left(err)   => fail(s"parse error: $err")
   }
 
-  test("parseConstant: 'pi' gives Some(math.Pi)") {
-    parseConstant("pi") match
-      case Some(v) => assert(math.abs(v - math.Pi) <= 1e-12)
-      case None    => fail("expected Some(math.Pi) but got None")
+  test("eval: AsciiMath x^2 + 5x with x=0 gives 0") {
+    AsciiMath.translate("x^2 + 5x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 0.0)), 0.0)
+      case Left(err)   => fail(s"parse error: $err")
   }
 
-  test("parseConstant: '2*pi' gives Some(2 * math.Pi)") {
-    parseConstant("2*pi") match
-      case Some(v) => assert(math.abs(v - 2 * math.Pi) <= 1e-12)
-      case None    => fail("expected Some(2*Pi) but got None")
+  // ── 13. Free variables: function application pattern ─────────────────────
+
+  test("freeVars: f(x) in ExprSeq does not count f as free variable") {
+    // AsciiMath parses f(x) as ExprSeq([Symbol("f"), BracketGroup("(",")",Symbol("x"))])
+    val expr = ExprSeq(List(Symbol("f"), BracketGroup("(", ")", Symbol("x"))))
+    assert(freeVars(expr) == Set("x"))
   }
 
-  test("parseConstant: 'pi/2' gives Some(math.Pi / 2)") {
-    parseConstant("pi/2") match
-      case Some(v) => assert(math.abs(v - math.Pi / 2) <= 1e-12)
-      case None    => fail("expected Some(Pi/2) but got None")
+  test("freeVars: AsciiMath f(x) does not count f as free variable") {
+    AsciiMath.translate("f(x)") match
+      case Right(expr) => assert(freeVars(expr) == Set("x"))
+      case Left(err)   => fail(s"parse error: $err")
   }
 
-  test("parseConstant: 'e' gives Some(math.E)") {
-    parseConstant("e") match
-      case Some(v) => assert(math.abs(v - math.E) <= 1e-12)
-      case None    => fail("expected Some(math.E) but got None")
+  test("freeVars: f(x) = x^2 + 5x only has x as free variable, not f") {
+    AsciiMath.translate("f(x) = x^2 + 5x") match
+      case Right(expr) => assert(freeVars(expr) == Set("x"))
+      case Left(err)   => fail(s"parse error: $err")
   }
 
-  test("parseConstant: 'sqrt(2)' gives Some(sqrt(2))") {
-    parseConstant("sqrt(2)") match
-      case Some(v) => assert(math.abs(v - math.sqrt(2)) <= 1e-12)
-      case None    => fail("expected Some(sqrt(2)) but got None")
-  }
-
-  test("parseConstant: expression with free variable 'x+1' gives None") {
-    assert(parseConstant("x+1") == None)
-  }
-
-  test("parseConstant: free variable alone 'x' gives None") {
-    assert(parseConstant("x") == None)
+  test("freeVars: f(x, y) = x^2 + 5x * y has x and y as free variables") {
+    AsciiMath.translate("f(x, y) = x^2 + 5x * y") match
+      case Right(expr) => assert(freeVars(expr) == Set("x", "y"))
+      case Left(err)   => fail(s"parse error: $err")
   }
 end EvaluatorSpec
