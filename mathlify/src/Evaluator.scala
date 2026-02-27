@@ -30,21 +30,21 @@ object Evaluator:
     case Operator(_)                  => Set.empty
     case ExprSeq(exprs)               =>
       def goSeq(items: List[MathExpr]): Set[String] = items match
-        case Nil                                                 => Set.empty
+        case Nil                                                   => Set.empty
         case Symbol(_) :: (bg @ BracketGroup("(", ")", _)) :: rest =>
           // Symbol followed by ( ) is a function application: the function name
           // is not a free variable, but the arguments are.
           freeVars(bg) ++ goSeq(rest)
         case head :: rest => freeVars(head) ++ goSeq(rest)
       goSeq(exprs)
-    case Over(b, t)                   => freeVars(b) ++ freeVars(t)
-    case Under(b, bot)                => freeVars(b) ++ freeVars(bot)
-    case SubSup(b, s, sup)            => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
-    case Style(_, c)                  => freeVars(c)
-    case TextNode(_)                  => Set.empty
-    case BracketGroup(_, _, c)        => freeVars(c)
-    case Enclose(_, c)                => freeVars(c)
-    case Color(_, c)                  => freeVars(c)
+    case Over(b, t)            => freeVars(b) ++ freeVars(t)
+    case Under(b, bot)         => freeVars(b) ++ freeVars(bot)
+    case SubSup(b, s, sup)     => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
+    case Style(_, c)           => freeVars(c)
+    case TextNode(_)           => Set.empty
+    case BracketGroup(_, _, c) => freeVars(c)
+    case Enclose(_, c)         => freeVars(c)
+    case Color(_, c)           => freeVars(c)
 
   def isClosed(expr: MathExpr): Boolean =
     freeVars(expr).isEmpty
@@ -60,14 +60,14 @@ object Evaluator:
   def foldConstants(expr: MathExpr): MathExpr = expr match
     case Add(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b))              => Number(a + b)
-        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 + c2)))
-        case (fl, fr)                            => Add(fl, fr)
+        case (Number(a), Number(b))             => Number(a + b)
+        case (Add(fl2, Number(c1)), Number(c2)) => foldConstants(Add(fl2, Number(c1 + c2)))
+        case (fl, fr)                           => Add(fl, fr)
     case Sub(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b))              => Number(a - b)
-        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 - c2)))
-        case (fl, fr)                            => Sub(fl, fr)
+        case (Number(a), Number(b))             => Number(a - b)
+        case (Add(fl2, Number(c1)), Number(c2)) => foldConstants(Add(fl2, Number(c1 - c2)))
+        case (fl, fr)                           => Sub(fl, fr)
     case Mul(l, r) =>
       (foldConstants(l), foldConstants(r)) match
         case (Number(a), Number(b))                             => Number(a * b)
@@ -126,6 +126,7 @@ object Evaluator:
       simplifyExprSeq(folded) match
         case List(e) => e
         case other   => ExprSeq(other)
+      end match
     case other => other
 
   // ── Full evaluation ───────────────────────────────────────────────────────
@@ -346,6 +347,7 @@ object Evaluator:
       e match
         case Operator(s @ ("+" | "-")) => flush(); currentOp = Some(s)
         case other                     => currentTermsRev = other :: currentTermsRev
+    end for
     flush()
     val segments = segmentsRev.reverse
 
@@ -366,10 +368,10 @@ object Evaluator:
         acc: List[(Option[String], Either[Double, List[MathExpr]])]
     ): List[(Option[String], Either[Double, List[MathExpr]])] =
       items match
-        case Nil => acc.reverse
+        case Nil                                        => acc.reverse
         case (op1, Left(v1)) :: (op2, Left(v2)) :: rest =>
-          val s1    = if op1.contains("-") then -v1 else v1
-          val s2    = if op2.contains("-") then -v2 else v2
+          val s1 = if op1.contains("-") then -v1 else v1
+          val s2 = if op2.contains("-") then -v2 else v2
           val total = s1 + s2
           val merged: (Option[String], Either[Double, List[MathExpr]]) = op1 match
             case None    => (None, Left(total))
