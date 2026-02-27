@@ -53,7 +53,30 @@ class EvaluatorSpec extends AnyFunSuite:
     assert(isClosed(Constant("pi")))
   }
 
-  // ── 3. isEvaluable ────────────────────────────────────────────────────────
+  // ── 3. unboundVars ────────────────────────────────────────────────────────
+
+  test("unboundVars: closed expression has no unbound vars") {
+    assert(unboundVars(Number(5.0)) == Set.empty)
+  }
+
+  test("unboundVars: single unbound symbol") {
+    assert(unboundVars(Symbol("x")) == Set("x"))
+  }
+
+  test("unboundVars: all vars bound returns empty set") {
+    assert(unboundVars(Add(Symbol("x"), Symbol("y")), Map("x" -> 1.0, "y" -> 2.0)) == Set.empty)
+  }
+
+  test("unboundVars: partially bound returns missing vars") {
+    assert(unboundVars(Add(Symbol("x"), Symbol("y")), Map("x" -> 1.0)) == Set("y"))
+  }
+
+  test("unboundVars: nested expression with multiple missing vars") {
+    val expr = Add(Mul(Symbol("x"), Symbol("y")), Symbol("z"))
+    assert(unboundVars(expr, Map("x" -> 1.0)) == Set("y", "z"))
+  }
+
+  // ── 4. isEvaluable ────────────────────────────────────────────────────────
 
   test("isEvaluable: closed expression is always evaluable") {
     assert(isEvaluable(Number(42.0), Map.empty))
@@ -67,7 +90,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assert(!isEvaluable(Add(Symbol("x"), Symbol("y")), Map("x" -> 2.0)))
   }
 
-  // ── 4. Closed evaluation (no environment) ─────────────────────────────────
+  // ── 5. Closed evaluation (no environment) ─────────────────────────────────
 
   test("eval: 2 + 3 = 5") {
     assertNumeric(eval(Add(Number(2.0), Number(3.0))), 5.0)
@@ -115,7 +138,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assertNumeric(eval(Neg(Number(5.0))), -5.0)
   }
 
-  // ── 5. Environment evaluation ─────────────────────────────────────────────
+  // ── 6. Environment evaluation ─────────────────────────────────────────────
 
   test("eval: x + 3 with x=2 gives 5") {
     val expr = Add(Symbol("x"), Number(3.0))
@@ -142,7 +165,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assertNumeric(eval(expr, Map("x" -> 1.0)), 0.0)
   }
 
-  // ── 6. Partial evaluation / constant folding ──────────────────────────────
+  // ── 7. Partial evaluation / constant folding ──────────────────────────────
 
   test("foldConstants: Add(2, 3) becomes Number(5)") {
     assert(foldConstants(Add(Number(2.0), Number(3.0))) == Number(5.0))
@@ -184,7 +207,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assertNumeric(partialEval(expr), 5.0)
   }
 
-  // ── 7. Error cases ────────────────────────────────────────────────────────
+  // ── 8. Error cases ────────────────────────────────────────────────────────
 
   test("eval: 1 / 0 returns EvalError") {
     assertError(eval(Div(Number(1.0), Number(0.0))))
@@ -207,7 +230,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assertError(eval(Fraction(Number(1.0), Number(0.0))))
   }
 
-  // ── 8. Additional arithmetic ──────────────────────────────────────────────
+  // ── 9. Additional arithmetic ──────────────────────────────────────────────
 
   test("eval: Sub(5, 3) = 2") {
     assertNumeric(eval(Sub(Number(5.0), Number(3.0))), 2.0)
@@ -230,7 +253,7 @@ class EvaluatorSpec extends AnyFunSuite:
     assertNumeric(eval(expr), 2.0, tol = 1e-6)
   }
 
-  // ── 9. AsciiMath integration ──────────────────────────────────────────────
+  // ── 10. AsciiMath integration ──────────────────────────────────────────────
 
   test("eval: AsciiMath 2*23 = 46") {
     AsciiMath.translate("2*23") match
