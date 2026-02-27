@@ -193,6 +193,7 @@ object Evaluator:
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Root")
     case Group(e) => evaluateNumeric(e, env)
+    case BracketGroup(_, _, c) => evaluateNumeric(c, env)
     case Fraction(n, d) =>
       (evaluateNumeric(n, env), evaluateNumeric(d, env)) match
         case (Numeric(a), Numeric(b)) =>
@@ -201,4 +202,80 @@ object Evaluator:
         case (e: EvalError, _) => e
         case (_, e: EvalError) => e
         case _                 => EvalError("Unexpected partial result in Fraction")
+    case ExprSeq(exprs) => evalInfixSeq(exprs, env)
     case other => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
+
+  // ── ExprSeq infix evaluator with precedence ───────────────────────────────
+
+  private def evalInfixSeq(exprs: List[MathExpr], env: Map[String, Double]): EvalResult =
+
+    // Additive: term (('+' | '-') term)*
+    def parseAdd(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+      val (lv, rest) = parseMul(items)
+      parseAddRest(lv, rest)
+
+    def parseAddRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+      items match
+        case Operator("+") :: rest =>
+          val (rv, remaining) = parseMul(rest)
+          val combined = (left, rv) match
+            case (Numeric(a), Numeric(b)) => Numeric(a + b)
+            case (e: EvalError, _)        => e
+            case (_, e: EvalError)        => e
+            case _                        => EvalError("Cannot add")
+          parseAddRest(combined, remaining)
+        case Operator("-") :: rest =>
+          val (rv, remaining) = parseMul(rest)
+          val combined = (left, rv) match
+            case (Numeric(a), Numeric(b)) => Numeric(a - b)
+            case (e: EvalError, _)        => e
+            case (_, e: EvalError)        => e
+            case _                        => EvalError("Cannot subtract")
+          parseAddRest(combined, remaining)
+        case _ => (left, items)
+
+    // Multiplicative: primary (('⋅' | '×' | '/') primary)*
+    def parseMul(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+      val (lv, rest) = parsePrimary(items)
+      parseMulRest(lv, rest)
+
+    def parseMulRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+      items match
+        case Operator(op) :: rest if op == "⋅" || op == "×" || op == "*" =>
+          val (rv, remaining) = parsePrimary(rest)
+          val combined = (left, rv) match
+            case (Numeric(a), Numeric(b)) => Numeric(a * b)
+            case (e: EvalError, _)        => e
+            case (_, e: EvalError)        => e
+            case _                        => EvalError("Cannot multiply")
+          parseMulRest(combined, remaining)
+        case Operator("/") :: rest =>
+          val (rv, remaining) = parsePrimary(rest)
+          val combined = (left, rv) match
+            case (Numeric(a), Numeric(b)) =>
+              if b == 0.0 then EvalError("Division by zero")
+              else Numeric(a / b)
+            case (e: EvalError, _) => e
+            case (_, e: EvalError) => e
+            case _                 => EvalError("Cannot divide")
+          parseMulRest(combined, remaining)
+        case _ => (left, items)
+
+    // Primary: optional unary '-' then a single MathExpr
+    def parsePrimary(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+      items match
+        case Nil => (EvalError("Unexpected end of expression"), Nil)
+        case Operator("-") :: rest =>
+          val (v, remaining) = parsePrimary(rest)
+          val negated = v match
+            case Numeric(a)   => Numeric(-a)
+            case e: EvalError => e
+            case _            => EvalError("Cannot negate")
+          (negated, remaining)
+        case expr :: rest => (evaluateNumeric(expr, env), rest)
+
+    val (result, remaining) = parseAdd(exprs)
+    if remaining.nonEmpty then
+      EvalError(s"Unexpected elements in ExprSeq: ${remaining.map(_.getClass.getSimpleName).mkString(", ")}")
+    else
+      result
