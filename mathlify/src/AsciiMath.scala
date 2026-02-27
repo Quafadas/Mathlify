@@ -165,7 +165,9 @@ object AsciiMath:
               if sym.invisible then inner
               else
                 val closeStr = rbOpt.map(_.output).getOrElse("")
-                BracketGroup(sym.output, closeStr, inner)
+                tryBuildMatrix(inner) match
+                  case Some(matrix) => BracketGroup(sym.output, closeStr, matrix)
+                  case None         => BracketGroup(sym.output, closeStr, inner)
             (Some(finalNode), rest2)
 
           case TEXTTYPE =>
@@ -226,6 +228,50 @@ object AsciiMath:
         getNumberOrChar(s) match
           case Some((expr, rest)) => (Some(expr), rest)
           case None               => (None, s)
+
+  // ── Matrix detection helpers ─────────────────────────────────────────────
+
+  private def splitRowByCols(row: MathExpr): List[MathExpr] =
+    row match
+      case ExprSeq(elems) =>
+        val (cols, last) = elems.foldLeft((List.empty[MathExpr], List.empty[MathExpr])) {
+          case ((cols, current), Operator(",")) =>
+            val cell = current match
+              case List(single) => single
+              case Nil          => Symbol("")
+              case _            => ExprSeq(current)
+            (cols :+ cell, Nil)
+          case ((cols, current), e) =>
+            (cols, current :+ e)
+        }
+        val lastCell = last match
+          case List(single) => single
+          case Nil          => Symbol("")
+          case _            => ExprSeq(last)
+        cols :+ lastCell
+      case other => List(other)
+
+  private def tryBuildMatrix(inner: MathExpr): Option[Matrix] =
+    inner match
+      case ExprSeq(elems) =>
+        @annotation.tailrec
+        def extractRows(remaining: List[MathExpr], acc: List[MathExpr]): Option[List[MathExpr]] =
+          remaining match
+            case Nil => Some(acc)
+            case BracketGroup("(", ")", rowContent) :: Nil =>
+              Some(acc :+ rowContent)
+            case BracketGroup("(", ")", rowContent) :: Operator(",") :: rest =>
+              extractRows(rest, acc :+ rowContent)
+            case _ => None
+        extractRows(elems, Nil).flatMap { rows =>
+          val rowCells = rows.map(splitRowByCols)
+          val numCols  = rowCells.head.length
+          // Matrix(elements, rows, cols, rowStride, colStride, offset)
+          if rowCells.forall(_.length == numCols) then
+            Some(Matrix(rowCells.flatten, rows.length, numCols, numCols, 1, 0))
+          else None
+        }
+      case _ => None
 
   // ── Unary builder ────────────────────────────────────────────────────────
 

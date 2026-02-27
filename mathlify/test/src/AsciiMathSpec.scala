@@ -445,3 +445,42 @@ class AsciiMathSpec extends AnyFunSuite:
         assert(mfrac.tagName.toLowerCase == "mfrac")
       case Left(err) => fail(s"parse error: $err")
   }
+
+  // ── 18. Column vectors / matrices ────────────────────────────────────────
+
+  test("AM: ((a),(b)) -> column vector") {
+    check(
+      "((a),(b))",
+      BracketGroup("(", ")", Matrix(
+        List(Symbol("a"), Symbol("b")),
+        2, 1, 1, 1, 0
+      ))
+    )
+  }
+
+  test("AM: ((a,b),(c,d)) -> 2x2 matrix") {
+    check(
+      "((a,b),(c,d))",
+      BracketGroup("(", ")", Matrix(
+        List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+        2, 2, 2, 1, 0
+      ))
+    )
+  }
+
+  test("AM: ((a)) -> nested brackets, not a matrix") {
+    check("((a))", BracketGroup("(", ")", BracketGroup("(", ")", Symbol("a"))))
+  }
+
+  test("MathML: ((a),(b)) produces mtable inside mrow") {
+    AsciiMath.translate("((a),(b))") match
+      case Right(ast) =>
+        val math = MathMLCompiler.toMathML(ast)
+        val mrow = math.firstChild.asInstanceOf[dom.Element]
+        assert(mrow.tagName.toLowerCase == "mrow", s"expected mrow, got ${mrow.tagName}")
+        assert(mrow.childNodes.length == 3, s"expected 3 children, got ${mrow.childNodes.length}")
+        val mtable = mrow.childNodes(1).asInstanceOf[dom.Element]
+        assert(mtable.tagName.toLowerCase == "mtable", s"expected mtable, got ${mtable.tagName}")
+        assert(mtable.childNodes.length == 2, s"expected 2 rows, got ${mtable.childNodes.length}")
+      case Left(err) => fail(s"parse error: $err")
+  }
