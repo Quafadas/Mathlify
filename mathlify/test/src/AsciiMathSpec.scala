@@ -528,6 +528,47 @@ class AsciiMathSpec extends AnyFunSuite:
     )
   }
 
+  // ── 20. Partial / mismatched invisible brackets ───────────────────────────
+
+  test("AM: {: x :} -> invisible both sides (inner returned directly)") {
+    check("{: x :}", Symbol("x"))
+  }
+
+  test("AM: {: x ) -> invisible open, visible close") {
+    check("{: x )", BracketGroup("", ")", Symbol("x")))
+  }
+
+  test("AM: ( x :} -> visible open, invisible close") {
+    check("( x :}", BracketGroup("(", "", Symbol("x")))
+  }
+
+  test("AM: {(a),(b):} -> visible { open, invisible :} close, matrix inside") {
+    AsciiMath.translate("{(a),(b):}") match
+      case Right(BracketGroup("{", "", _: Matrix)) => // pass
+      case Right(other)                            => fail(s"expected BracketGroup with open={{, close=empty, got $other")
+      case Left(err)                               => fail(s"parse error: $err")
+  }
+
+  test("MathML: BracketGroup with empty open omits open mo") {
+    val e = MathMLCompiler.compile(BracketGroup("", ")", Symbol("x")), "0")
+    assert(e.tagName.toLowerCase == "mrow")
+    assert(e.childNodes.length == 2)
+    assert(e.lastChild.asInstanceOf[dom.Element].textContent == ")")
+  }
+
+  test("MathML: {(a),(b):} produces mrow with { but no :}") {
+    AsciiMath.translate("{(a),(b):}") match
+      case Right(ast) =>
+        val math = MathMLCompiler.toMathML(ast)
+        val mrow = math.firstChild.asInstanceOf[dom.Element]
+        assert(mrow.tagName.toLowerCase == "mrow")
+        // children: open-mo("{") + mtable — no closing mo
+        assert(mrow.childNodes.length == 2, s"expected 2 children (open + table), got ${mrow.childNodes.length}")
+        assert(mrow.firstChild.asInstanceOf[dom.Element].textContent == "{")
+        assert(mrow.lastChild.asInstanceOf[dom.Element].tagName.toLowerCase == "mtable")
+      case Left(err) => fail(s"parse error: $err")
+  }
+
   test("MathML: [[a,b],[c,d]] produces mrow with mtable inside square brackets") {
     AsciiMath.translate("[[a,b],[c,d]]") match
       case Right(ast) =>
