@@ -367,4 +367,50 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = Add(Add(Symbol("x"), Number(3.0)), Number(4.0))
     assert(foldConstants(expr) == Add(Symbol("x"), Number(7.0)))
   }
+
+  // ── 12. Superscript evaluation (AsciiMath produces Superscript for x^2) ────
+
+  test("eval: AsciiMath x^2 with x=4 gives 16") {
+    AsciiMath.translate("x^2") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 4.0)), 16.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath x^2 + 5x with x=4 gives 36") {
+    AsciiMath.translate("x^2 + 5x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 4.0)), 36.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath x^2 + 5x with x=0 gives 0") {
+    AsciiMath.translate("x^2 + 5x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 0.0)), 0.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  // ── 13. Free variables: function application pattern ─────────────────────
+
+  test("freeVars: f(x) in ExprSeq does not count f as free variable") {
+    // AsciiMath parses f(x) as ExprSeq([Symbol("f"), BracketGroup("(",")",Symbol("x"))])
+    val expr = ExprSeq(List(Symbol("f"), BracketGroup("(", ")", Symbol("x"))))
+    assert(freeVars(expr) == Set("x"))
+  }
+
+  test("freeVars: AsciiMath f(x) does not count f as free variable") {
+    AsciiMath.translate("f(x)") match
+      case Right(expr) => assert(freeVars(expr) == Set("x"))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("freeVars: f(x) = x^2 + 5x only has x as free variable, not f") {
+    AsciiMath.translate("f(x) = x^2 + 5x") match
+      case Right(expr) => assert(freeVars(expr) == Set("x"))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("freeVars: f(x, y) = x^2 + 5x * y has x and y as free variables") {
+    AsciiMath.translate("f(x, y) = x^2 + 5x * y") match
+      case Right(expr) => assert(freeVars(expr) == Set("x", "y"))
+      case Left(err)   => fail(s"parse error: $err")
+  }
 end EvaluatorSpec
