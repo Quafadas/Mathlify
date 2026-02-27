@@ -21,8 +21,7 @@ object MathExpr:
   case class Fraction(numerator: MathExpr, denominator: MathExpr) extends MathExpr
   case class Root(degree: Option[MathExpr], radicand: MathExpr) extends MathExpr
   case class Sum(index: MathExpr, lower: MathExpr, upper: MathExpr, body: MathExpr) extends MathExpr
-  case class Integral(variable: MathExpr, lower: MathExpr, upper: MathExpr, body: MathExpr)
-      extends MathExpr
+  case class Integral(variable: MathExpr, lower: MathExpr, upper: MathExpr, body: MathExpr) extends MathExpr
   case class Group(expr: MathExpr) extends MathExpr
 
   // Collections
@@ -51,3 +50,4 @@ object MathExpr:
   case class BracketGroup(open: String, close: String, content: MathExpr) extends MathExpr
   case class Enclose(notation: String, content: MathExpr) extends MathExpr
   case class Color(color: String, content: MathExpr) extends MathExpr
+end MathExpr

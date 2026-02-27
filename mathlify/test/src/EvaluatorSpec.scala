@@ -153,29 +153,30 @@ class EvaluatorSpec extends AnyFunSuite:
   }
 
   test("foldConstants: 2 + x + 3 stays unchanged (no reordering)") {
-    val expr   = Add(Add(Number(2.0), Symbol("x")), Number(3.0))
+    val expr = Add(Add(Number(2.0), Symbol("x")), Number(3.0))
     val folded = foldConstants(expr)
     assert(folded == Add(Add(Number(2.0), Symbol("x")), Number(3.0)))
   }
 
   test("foldConstants: (2 * 3) + y folds to 6 + y") {
-    val expr   = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
+    val expr = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
     val folded = foldConstants(expr)
     assert(folded == Add(Number(6.0), Symbol("y")))
   }
 
   test("foldConstants: x * (3 + 4) folds to x * 7") {
-    val expr   = Mul(Symbol("x"), Add(Number(3.0), Number(4.0)))
+    val expr = Mul(Symbol("x"), Add(Number(3.0), Number(4.0)))
     val folded = foldConstants(expr)
     assert(folded == Mul(Symbol("x"), Number(7.0)))
   }
 
   test("partialEval: returns PartiallyReduced when vars are missing") {
-    val expr   = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
+    val expr = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
     val result = partialEval(expr)
     result match
       case PartiallyReduced(e) => assert(e == Add(Number(6.0), Symbol("y")))
       case other               => fail(s"expected PartiallyReduced but got $other")
+    end match
   }
 
   test("partialEval: returns Numeric when fully evaluable") {
@@ -228,3 +229,36 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = Root(Some(Number(3.0)), Number(8.0))
     assertNumeric(eval(expr), 2.0, tol = 1e-6)
   }
+
+  // ── 9. AsciiMath integration ──────────────────────────────────────────────
+
+  test("eval: AsciiMath 2*23 = 46") {
+    AsciiMath.translate("2*23") match
+      case Right(expr) => assertNumeric(eval(expr), 46.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 2+3 = 5") {
+    AsciiMath.translate("2+3") match
+      case Right(expr) => assertNumeric(eval(expr), 5.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 10-4 = 6") {
+    AsciiMath.translate("10-4") match
+      case Right(expr) => assertNumeric(eval(expr), 6.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 2+3*4 = 14 (precedence)") {
+    AsciiMath.translate("2+3*4") match
+      case Right(expr) => assertNumeric(eval(expr), 14.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath (2+3)*4 = 20 (brackets)") {
+    AsciiMath.translate("(2+3)*4") match
+      case Right(expr) => assertNumeric(eval(expr), 20.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+end EvaluatorSpec

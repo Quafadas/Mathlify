@@ -3,24 +3,23 @@ package build.mathlify
 import mill.*, scalalib.*, scalajslib.*
 import mill.scalajslib.api.*
 
-object `package` extends ScalaJSModule, build.MathlifyPublishModule {
+object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   def scalaVersion = build.V.scalaVersion
   def scalaJSVersion = build.V.scalaJSVersion
   def mvnDeps = Seq(
-    build.V.jsDom, 
-    build.V.laminar,     
-    build.V.fastparse,
-  )  
+    build.V.jsDom,
+    build.V.laminar,
+    build.V.fastparse
+  )
 
-  object test extends TestScalaJSModule , TestModule.ScalaTest {
+  object test extends TestScalaJSModule, TestModule.ScalaTest:
     def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
-      mvn"org.scalameta::munit::1.2.2", 
+      mvn"org.scalameta::munit::1.2.2",
       mvn"com.raquo::domtestutils::19.0.0"
     )
     def moduleDeps = Seq(build.mathlify)
     override def jsEnvConfig = JsEnvConfig.JsDom()
-  }
-
-}
+  end test
+end `package`

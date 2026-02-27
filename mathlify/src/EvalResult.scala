@@ -1,6 +1,5 @@
 package mathlify
 
-
 // ── Result types ──────────────────────────────────────────────────────────
 
 sealed trait EvalResult

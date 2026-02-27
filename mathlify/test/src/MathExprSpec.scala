@@ -99,28 +99,28 @@ class MathExprSpec extends AnyFunSuite:
   test("MathML: Number produces mn element") {
     val node = MathMLCompiler.toMathML(Number(3.0))
     val math = node.asInstanceOf[dom.Element]
-    val mn   = math.firstChild.asInstanceOf[dom.Element]
+    val mn = math.firstChild.asInstanceOf[dom.Element]
     assert(mn.tagName.toLowerCase == "mn")
   }
 
   test("MathML: Number integer formats without decimal") {
     val node = MathMLCompiler.toMathML(Number(5.0))
     val math = node.asInstanceOf[dom.Element]
-    val mn   = math.firstChild.asInstanceOf[dom.Element]
+    val mn = math.firstChild.asInstanceOf[dom.Element]
     assert(mn.textContent == "5")
   }
 
   test("MathML: Number decimal keeps decimal part") {
     val node = MathMLCompiler.toMathML(Number(3.14))
     val math = node.asInstanceOf[dom.Element]
-    val mn   = math.firstChild.asInstanceOf[dom.Element]
+    val mn = math.firstChild.asInstanceOf[dom.Element]
     assert(mn.textContent.contains("."))
   }
 
   test("MathML: Symbol produces mi element") {
     val node = MathMLCompiler.toMathML(Symbol("x"))
     val math = node.asInstanceOf[dom.Element]
-    val mi   = math.firstChild.asInstanceOf[dom.Element]
+    val mi = math.firstChild.asInstanceOf[dom.Element]
     assert(mi.tagName.toLowerCase == "mi")
     assert(mi.textContent == "x")
   }
@@ -128,7 +128,7 @@ class MathExprSpec extends AnyFunSuite:
   test("MathML: Constant pi renders as π") {
     val node = MathMLCompiler.toMathML(Constant("pi"))
     val math = node.asInstanceOf[dom.Element]
-    val mi   = math.firstChild.asInstanceOf[dom.Element]
+    val mi = math.firstChild.asInstanceOf[dom.Element]
     assert(mi.textContent == "π")
   }
 
@@ -144,14 +144,14 @@ class MathExprSpec extends AnyFunSuite:
     val node = MathMLCompiler.toMathML(Add(Symbol("x"), Number(1.0)))
     val math = node.asInstanceOf[dom.Element]
     val mrow = math.firstChild.asInstanceOf[dom.Element]
-    val mo   = mrow.childNodes(1).asInstanceOf[dom.Element]
+    val mo = mrow.childNodes(1).asInstanceOf[dom.Element]
     assert(mo.tagName.toLowerCase == "mo")
     assert(mo.textContent == "+")
   }
 
   test("MathML: Div produces mfrac") {
-    val node  = MathMLCompiler.toMathML(Div(Symbol("a"), Symbol("b")))
-    val math  = node.asInstanceOf[dom.Element]
+    val node = MathMLCompiler.toMathML(Div(Symbol("a"), Symbol("b")))
+    val math = node.asInstanceOf[dom.Element]
     val mfrac = math.firstChild.asInstanceOf[dom.Element]
     assert(mfrac.tagName.toLowerCase == "mfrac")
     assert(mfrac.childNodes.length == 2)
@@ -165,15 +165,15 @@ class MathExprSpec extends AnyFunSuite:
   }
 
   test("MathML: Root(None) produces msqrt") {
-    val node  = MathMLCompiler.toMathML(Root(None, Symbol("x")))
-    val math  = node.asInstanceOf[dom.Element]
+    val node = MathMLCompiler.toMathML(Root(None, Symbol("x")))
+    val math = node.asInstanceOf[dom.Element]
     val msqrt = math.firstChild.asInstanceOf[dom.Element]
     assert(msqrt.tagName.toLowerCase == "msqrt")
   }
 
   test("MathML: Root(Some) produces mroot") {
-    val node  = MathMLCompiler.toMathML(Root(Some(Number(3.0)), Symbol("x")))
-    val math  = node.asInstanceOf[dom.Element]
+    val node = MathMLCompiler.toMathML(Root(Some(Number(3.0)), Symbol("x")))
+    val math = node.asInstanceOf[dom.Element]
     val mroot = math.firstChild.asInstanceOf[dom.Element]
     assert(mroot.tagName.toLowerCase == "mroot")
   }
@@ -199,8 +199,8 @@ class MathExprSpec extends AnyFunSuite:
   }
 
   test("MathML: data-mathlify-id is set on inner element") {
-    val node  = MathMLCompiler.toMathML(Symbol("x"))
-    val math  = node.asInstanceOf[dom.Element]
+    val node = MathMLCompiler.toMathML(Symbol("x"))
+    val math = node.asInstanceOf[dom.Element]
     val inner = math.firstChild.asInstanceOf[dom.Element]
     assert(inner.getAttribute("data-mathlify-id") == "0")
   }
@@ -346,9 +346,14 @@ class MathExprSpec extends AnyFunSuite:
   test("AsciiMath: sum_(i=1)^n x produces Sum") {
     assert(
       AsciiMath.translate("sum_(i=1)^n x") ==
-        Right(ExprSeq(List(
-          SubSup(Operator("∑"), ExprSeq(List(Symbol("i"), Operator("="), Number(1.0))), Symbol("n")),
-          Symbol("x")
-        )))
+        Right(
+          ExprSeq(
+            List(
+              SubSup(Operator("∑"), ExprSeq(List(Symbol("i"), Operator("="), Number(1.0))), Symbol("n")),
+              Symbol("x")
+            )
+          )
+        )
     )
   }
+end MathExprSpec
