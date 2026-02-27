@@ -14,7 +14,7 @@ def app =
     mathlify.AsciiMath.translate(s)
   }
   val varMap = Var(Map.empty[String, Double])
-  div(    
+  div(
     h1(s"Ascii Parser"),
     // https://demo.laminar.dev/app/form/controlled-inputs
     p("Enter an AsciiMath expression:"),
@@ -51,8 +51,8 @@ def app =
                 )
               )
             }
-          )
-      }              
+        )
+      }
     ),
     h1("Eval"),
     p("We attempt to evaludate the expression, and if it contains free variables, we just show the reduced form."),

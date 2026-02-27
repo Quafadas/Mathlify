@@ -173,7 +173,7 @@ object AsciiMath:
                 (Some(rb), restAfterRB.substring(rb.input.length))
               case _ =>
                 (None, rest1)
-            val openStr  = if sym.invisible then "" else sym.output
+            val openStr = if sym.invisible then "" else sym.output
             val closeStr = rbOpt.map(rb => if rb.invisible then "" else rb.output).getOrElse("")
             val finalNode =
               if openStr.isEmpty && closeStr.isEmpty then inner
