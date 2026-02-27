@@ -228,3 +228,35 @@ class EvaluatorSpec extends AnyFunSuite:
     val expr = Root(Some(Number(3.0)), Number(8.0))
     assertNumeric(eval(expr), 2.0, tol = 1e-6)
   }
+
+  // ── 9. AsciiMath integration ──────────────────────────────────────────────
+
+  test("eval: AsciiMath 2*23 = 46") {
+    AsciiMath.translate("2*23") match
+      case Right(expr) => assertNumeric(eval(expr), 46.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 2+3 = 5") {
+    AsciiMath.translate("2+3") match
+      case Right(expr) => assertNumeric(eval(expr), 5.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 10-4 = 6") {
+    AsciiMath.translate("10-4") match
+      case Right(expr) => assertNumeric(eval(expr), 6.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 2+3*4 = 14 (precedence)") {
+    AsciiMath.translate("2+3*4") match
+      case Right(expr) => assertNumeric(eval(expr), 14.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath (2+3)*4 = 20 (brackets)") {
+    AsciiMath.translate("(2+3)*4") match
+      case Right(expr) => assertNumeric(eval(expr), 20.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
