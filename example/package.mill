@@ -9,11 +9,10 @@ import cats.effect.unsafe.implicits.global
 import fs2.concurrent.Topic
 import mill.api.BuildCtx
 
-
-object `package` extends TestScalaJSModule , TestModule.ScalaTest {
+object `package` extends TestScalaJSModule, TestModule.ScalaTest:
   def scalaVersion = build.V.scalaVersion
-  def scalaJSVersion = build.V.scalaJSVersion 
-  def moduleDeps = Seq(build.mathlify)  
+  def scalaJSVersion = build.V.scalaJSVersion
+  def moduleDeps = Seq(build.mathlify)
 
   def sitePathOnly = Task {
     fastLinkJS().dest.path.toString()
@@ -62,14 +61,14 @@ object `package` extends TestScalaJSModule , TestModule.ScalaTest {
       os.copy.over(linked.dest.path, Task.dest, createFolders = true, replaceExisting = true)
       os.write.over(Task.dest / "index.html", html)
       mill.scalajslib.api.Report(
-        publicModules = linked.publicModules,      
+        publicModules = linked.publicModules,
         dest = PathRef(Task.dest)
       )
     }
   }
 
-  val html = 
-      s"""<!DOCTYPE html>
+  val html =
+    s"""<!DOCTYPE html>
 <html>
   <head>
     <title>Mathlify</title>
@@ -89,8 +88,6 @@ object `package` extends TestScalaJSModule , TestModule.ScalaTest {
     <script src="main.js" type="module"></script>
   </body>
 </html>""".stripMargin
-   
-  
 
   // def assets = Task {
   //   println("site assets")
@@ -112,20 +109,19 @@ object `package` extends TestScalaJSModule , TestModule.ScalaTest {
   def lcs = Task.Anon {
     val port_ = port()
     val sitePathOnly_ = sitePathOnly()
-    
-      LiveServerConfig(
-        baseDir = None, // typically this would be a build tool here
-        // outDir = Some(assets().path.toString()),
-        port =
-          com.comcast.ip4s.Port.fromInt(port_).getOrElse(throw new IllegalArgumentException(s"invalid port: ${port_}")),
-        indexHtmlTemplate = Some(sitePathOnly_),
-        buildTool = io.github.quafadas.sjsls.NoBuildTool(),
-        openBrowserAt = "/",
-        preventBrowserOpen = !openBrowser(),
-        customRefresh = Some(updateServer),
-        logLevel = logLevel()
-      )
-    
+
+    LiveServerConfig(
+      baseDir = None, // typically this would be a build tool here
+      // outDir = Some(assets().path.toString()),
+      port = com.comcast.ip4s.Port.fromInt(port_).getOrElse(throw new IllegalArgumentException(s"invalid port: ${port_}")),
+      indexHtmlTemplate = Some(sitePathOnly_),
+      buildTool = io.github.quafadas.sjsls.NoBuildTool(),
+      openBrowserAt = "/",
+      preventBrowserOpen = !openBrowser(),
+      customRefresh = Some(updateServer),
+      logLevel = logLevel()
+    )
+
   }
 
   lazy val updateServer = Topic[IO, Unit].unsafeRunSync()
@@ -137,7 +133,7 @@ object `package` extends TestScalaJSModule , TestModule.ScalaTest {
     }
   }
 
-    /** Wrapper class for the live-reload HTTP server.
+  /** Wrapper class for the live-reload HTTP server.
     *
     * Manages the lifecycle of the sjsls LiveServer, providing automatic cleanup via AutoCloseable.
     *
@@ -155,4 +151,4 @@ object `package` extends TestScalaJSModule , TestModule.ScalaTest {
       server.map(_._2).flatten.unsafeRunSync()
     end close
   end RefreshServer
-}
+end `package`

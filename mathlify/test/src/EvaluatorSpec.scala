@@ -153,29 +153,30 @@ class EvaluatorSpec extends AnyFunSuite:
   }
 
   test("foldConstants: 2 + x + 3 stays unchanged (no reordering)") {
-    val expr   = Add(Add(Number(2.0), Symbol("x")), Number(3.0))
+    val expr = Add(Add(Number(2.0), Symbol("x")), Number(3.0))
     val folded = foldConstants(expr)
     assert(folded == Add(Add(Number(2.0), Symbol("x")), Number(3.0)))
   }
 
   test("foldConstants: (2 * 3) + y folds to 6 + y") {
-    val expr   = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
+    val expr = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
     val folded = foldConstants(expr)
     assert(folded == Add(Number(6.0), Symbol("y")))
   }
 
   test("foldConstants: x * (3 + 4) folds to x * 7") {
-    val expr   = Mul(Symbol("x"), Add(Number(3.0), Number(4.0)))
+    val expr = Mul(Symbol("x"), Add(Number(3.0), Number(4.0)))
     val folded = foldConstants(expr)
     assert(folded == Mul(Symbol("x"), Number(7.0)))
   }
 
   test("partialEval: returns PartiallyReduced when vars are missing") {
-    val expr   = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
+    val expr = Add(Mul(Number(2.0), Number(3.0)), Symbol("y"))
     val result = partialEval(expr)
     result match
       case PartiallyReduced(e) => assert(e == Add(Number(6.0), Symbol("y")))
       case other               => fail(s"expected PartiallyReduced but got $other")
+    end match
   }
 
   test("partialEval: returns Numeric when fully evaluable") {
@@ -260,3 +261,4 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) => assertNumeric(eval(expr), 20.0)
       case Left(err)   => fail(s"parse error: $err")
   }
+end EvaluatorSpec

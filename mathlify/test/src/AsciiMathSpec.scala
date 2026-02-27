@@ -451,20 +451,36 @@ class AsciiMathSpec extends AnyFunSuite:
   test("AM: ((a),(b)) -> column vector") {
     check(
       "((a),(b))",
-      BracketGroup("(", ")", Matrix(
-        List(Symbol("a"), Symbol("b")),
-        2, 1, 1, 1, 0
-      ))
+      BracketGroup(
+        "(",
+        ")",
+        Matrix(
+          List(Symbol("a"), Symbol("b")),
+          2,
+          1,
+          1,
+          1,
+          0
+        )
+      )
     )
   }
 
   test("AM: ((a,b),(c,d)) -> 2x2 matrix") {
     check(
       "((a,b),(c,d))",
-      BracketGroup("(", ")", Matrix(
-        List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
-        2, 2, 2, 1, 0
-      ))
+      BracketGroup(
+        "(",
+        ")",
+        Matrix(
+          List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+          2,
+          2,
+          2,
+          1,
+          0
+        )
+      )
     )
   }
 
@@ -484,3 +500,4 @@ class AsciiMathSpec extends AnyFunSuite:
         assert(mtable.childNodes.length == 2, s"expected 2 rows, got ${mtable.childNodes.length}")
       case Left(err) => fail(s"parse error: $err")
   }
+end AsciiMathSpec

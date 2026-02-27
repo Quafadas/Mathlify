@@ -8,7 +8,8 @@ object LaminarRenderer:
       onMountCallback { ctx =>
         expr.foreach { e =>
           val el = ctx.thisNode.ref
-          while (el.firstChild != null) el.removeChild(el.firstChild)
+          while el.firstChild != null do el.removeChild(el.firstChild)
+          end while
           el.appendChild(MathMLCompiler.toMathML(e))
         }(using ctx.owner)
       }
@@ -18,7 +19,9 @@ object LaminarRenderer:
     div(
       onMountCallback { ctx =>
         val el = ctx.thisNode.ref
-        while (el.firstChild != null) el.removeChild(el.firstChild)
+        while el.firstChild != null do el.removeChild(el.firstChild)
+        end while
         el.appendChild(MathMLCompiler.toMathML(expr))
       }
     )
+end LaminarRenderer

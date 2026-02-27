@@ -8,7 +8,7 @@ import mill.*, scalalib.*, publish.*
 import mill.api.Task.Simple
 import mill.util.VcsVersion
 
-object V:  
+object V:
   val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M3"
   val jsDom: Dep = mvn"org.scala-js::scalajs-dom::2.2.0"
   val fastparse: Dep = mvn"com.lihaoyi::fastparse::3.1.1"

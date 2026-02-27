@@ -8,17 +8,17 @@ object MathParser:
 
   private val knownConstants = Set("pi", "e", "inf")
 
-  def number(using P[Any]): P[MathExpr] = {
+  def number(using P[Any]): P[MathExpr] =
     import fastparse.NoWhitespace.*
     P((CharsWhileIn("0-9") ~ ("." ~ CharsWhileIn("0-9")).?).!).map { s =>
       Number(s.toDouble)
     }
-  }
+  end number
 
-  def identifier(using P[Any]): P[String] = {
+  def identifier(using P[Any]): P[String] =
     import fastparse.NoWhitespace.*
     P((CharIn("a-zA-Z") ~ CharsWhileIn("a-zA-Z0-9", 0)).!)
-  }
+  end identifier
 
   def braceContent(using P[Any]): P[MathExpr] = P("{" ~ expr ~ "}")
 
@@ -54,7 +54,7 @@ object MathParser:
   def funcCallOrSymbol(using P[Any]): P[MathExpr] =
     P(identifier ~ ("(" ~ args ~ ")").?).map {
       case (name, Some(argList)) => FunctionCall(name, argList)
-      case (name, None) =>
+      case (name, None)          =>
         if knownConstants.contains(name) then Constant(name)
         else Symbol(name)
     }
@@ -93,7 +93,7 @@ object MathParser:
     }
 
   def addExpr(using P[Any]): P[MathExpr] =
-    P(mulExpr ~ (("+"|"-").! ~ mulExpr).rep).map { case (head, ops) =>
+    P(mulExpr ~ (("+" | "-").! ~ mulExpr).rep).map { case (head, ops) =>
       ops.foldLeft(head) {
         case (acc, ("+", rhs)) => Add(acc, rhs)
         case (acc, ("-", rhs)) => Sub(acc, rhs)
@@ -107,3 +107,4 @@ object MathParser:
     fastparse.parse(input.trim, { implicit p: P[Any] => expr ~ End }) match
       case Parsed.Success(value, _) => Right(value)
       case f: Parsed.Failure        => Left(f.msg)
+end MathParser

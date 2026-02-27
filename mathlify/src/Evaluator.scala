@@ -8,35 +8,35 @@ object Evaluator:
   // ── Free variable analysis ────────────────────────────────────────────────
 
   def freeVars(expr: MathExpr): Set[String] = expr match
-    case Number(_)                     => Set.empty
-    case Constant(_)                   => Set.empty
-    case Symbol(name)                  => Set(name)
-    case Add(l, r)                     => freeVars(l) ++ freeVars(r)
-    case Sub(l, r)                     => freeVars(l) ++ freeVars(r)
-    case Mul(l, r)                     => freeVars(l) ++ freeVars(r)
-    case Div(l, r)                     => freeVars(l) ++ freeVars(r)
-    case Pow(b, e)                     => freeVars(b) ++ freeVars(e)
-    case Neg(e)                        => freeVars(e)
-    case FunctionCall(_, args)         => args.flatMap(freeVars).toSet
-    case Fraction(n, d)                => freeVars(n) ++ freeVars(d)
-    case Root(deg, rad)                => deg.map(freeVars).getOrElse(Set.empty) ++ freeVars(rad)
-    case Sum(idx, lo, hi, body)        => freeVars(idx) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
-    case Integral(v, lo, hi, body)     => freeVars(v) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
-    case Group(e)                      => freeVars(e)
-    case MathVector(elems)             => elems.flatMap(freeVars).toSet
-    case Matrix(elems, _, _, _, _, _)  => elems.flatMap(freeVars).toSet
-    case Subscript(b, s)               => freeVars(b) ++ freeVars(s)
-    case Superscript(b, s)             => freeVars(b) ++ freeVars(s)
-    case Operator(_)                   => Set.empty
-    case ExprSeq(exprs)                => exprs.flatMap(freeVars).toSet
-    case Over(b, t)                    => freeVars(b) ++ freeVars(t)
-    case Under(b, bot)                 => freeVars(b) ++ freeVars(bot)
-    case SubSup(b, s, sup)             => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
-    case Style(_, c)                   => freeVars(c)
-    case TextNode(_)                   => Set.empty
-    case BracketGroup(_, _, c)         => freeVars(c)
-    case Enclose(_, c)                 => freeVars(c)
-    case Color(_, c)                   => freeVars(c)
+    case Number(_)                    => Set.empty
+    case Constant(_)                  => Set.empty
+    case Symbol(name)                 => Set(name)
+    case Add(l, r)                    => freeVars(l) ++ freeVars(r)
+    case Sub(l, r)                    => freeVars(l) ++ freeVars(r)
+    case Mul(l, r)                    => freeVars(l) ++ freeVars(r)
+    case Div(l, r)                    => freeVars(l) ++ freeVars(r)
+    case Pow(b, e)                    => freeVars(b) ++ freeVars(e)
+    case Neg(e)                       => freeVars(e)
+    case FunctionCall(_, args)        => args.flatMap(freeVars).toSet
+    case Fraction(n, d)               => freeVars(n) ++ freeVars(d)
+    case Root(deg, rad)               => deg.map(freeVars).getOrElse(Set.empty) ++ freeVars(rad)
+    case Sum(idx, lo, hi, body)       => freeVars(idx) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
+    case Integral(v, lo, hi, body)    => freeVars(v) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
+    case Group(e)                     => freeVars(e)
+    case MathVector(elems)            => elems.flatMap(freeVars).toSet
+    case Matrix(elems, _, _, _, _, _) => elems.flatMap(freeVars).toSet
+    case Subscript(b, s)              => freeVars(b) ++ freeVars(s)
+    case Superscript(b, s)            => freeVars(b) ++ freeVars(s)
+    case Operator(_)                  => Set.empty
+    case ExprSeq(exprs)               => exprs.flatMap(freeVars).toSet
+    case Over(b, t)                   => freeVars(b) ++ freeVars(t)
+    case Under(b, bot)                => freeVars(b) ++ freeVars(bot)
+    case SubSup(b, s, sup)            => freeVars(b) ++ freeVars(s) ++ freeVars(sup)
+    case Style(_, c)                  => freeVars(c)
+    case TextNode(_)                  => Set.empty
+    case BracketGroup(_, _, c)        => freeVars(c)
+    case Enclose(_, c)                => freeVars(c)
+    case Color(_, c)                  => freeVars(c)
 
   def isClosed(expr: MathExpr): Boolean =
     freeVars(expr).isEmpty
@@ -57,15 +57,15 @@ object Evaluator:
         case (fl, fr)               => Sub(fl, fr)
     case Mul(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b)) => Number(a * b)
+        case (Number(a), Number(b))                             => Number(a * b)
         case (fl, fr) if fl == Number(0.0) || fr == Number(0.0) => Number(0.0)
-        case (Number(1.0), fr)      => fr
-        case (fl, Number(1.0))      => fl
-        case (fl, fr)               => Mul(fl, fr)
+        case (Number(1.0), fr)                                  => fr
+        case (fl, Number(1.0))                                  => fl
+        case (fl, fr)                                           => Mul(fl, fr)
     case Div(l, r) =>
       (foldConstants(l), foldConstants(r)) match
         case (Number(a), Number(b)) if b != 0.0 => Number(a / b)
-        case (fl, fr)                            => Div(fl, fr)
+        case (fl, fr)                           => Div(fl, fr)
     case Pow(b, e) =>
       (foldConstants(b), foldConstants(e)) match
         case (Number(a), Number(n)) => Number(math.pow(a, n))
@@ -85,6 +85,7 @@ object Evaluator:
             case "log" => Number(math.log(a))
             case _     => FunctionCall(name, foldedArgs)
         case _ => FunctionCall(name, foldedArgs)
+      end match
     case Root(None, rad) =>
       foldConstants(rad) match
         case Number(a) => Number(math.sqrt(a))
@@ -98,17 +99,17 @@ object Evaluator:
     case Fraction(n, d) =>
       (foldConstants(n), foldConstants(d)) match
         case (Number(a), Number(b)) if b != 0.0 => Number(a / b)
-        case (fn, fd)                            => Fraction(fn, fd)
+        case (fn, fd)                           => Fraction(fn, fd)
     case other => other
 
   // ── Full evaluation ───────────────────────────────────────────────────────
 
   def eval(expr: MathExpr, env: Map[String, Double] = Map.empty): EvalResult =
     val folded = foldConstants(expr)
-    if !isEvaluable(folded, env) then
-      EvalError(s"Unbound variables: ${(freeVars(folded) -- env.keySet).mkString(", ")}")
-    else
-      evaluateNumeric(folded, env)
+    if !isEvaluable(folded, env) then EvalError(s"Unbound variables: ${(freeVars(folded) -- env.keySet).mkString(", ")}")
+    else evaluateNumeric(folded, env)
+    end if
+  end eval
 
   // ── Partial evaluation ────────────────────────────────────────────────────
 
@@ -116,6 +117,8 @@ object Evaluator:
     val folded = foldConstants(expr)
     if isEvaluable(folded, env) then evaluateNumeric(folded, env)
     else PartiallyReduced(folded)
+    end if
+  end partialEval
 
   // ── Internal numeric evaluator ────────────────────────────────────────────
 
@@ -123,7 +126,7 @@ object Evaluator:
       expr: MathExpr,
       env: Map[String, Double]
   ): EvalResult = expr match
-    case Number(n) => Numeric(n)
+    case Number(n)      => Numeric(n)
     case Constant(name) =>
       name match
         case "pi" | "π" => Numeric(math.Pi)
@@ -167,7 +170,7 @@ object Evaluator:
         case _                        => EvalError("Unexpected partial result in Pow")
     case Neg(e) =>
       evaluateNumeric(e, env) match
-        case Numeric(a)  => Numeric(-a)
+        case Numeric(a)   => Numeric(-a)
         case e: EvalError => e
         case _            => EvalError("Unexpected partial result in Neg")
     case FunctionCall(name, args) =>
@@ -192,9 +195,9 @@ object Evaluator:
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Root")
-    case Group(e) => evaluateNumeric(e, env)
+    case Group(e)              => evaluateNumeric(e, env)
     case BracketGroup(_, _, c) => evaluateNumeric(c, env)
-    case Fraction(n, d) =>
+    case Fraction(n, d)        =>
       (evaluateNumeric(n, env), evaluateNumeric(d, env)) match
         case (Numeric(a), Numeric(b)) =>
           if b == 0.0 then EvalError("Division by zero")
@@ -203,7 +206,7 @@ object Evaluator:
         case (_, e: EvalError) => e
         case _                 => EvalError("Unexpected partial result in Fraction")
     case ExprSeq(exprs) => evalInfixSeq(exprs, env)
-    case other => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
+    case other          => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
 
   // ── ExprSeq infix evaluator with precedence ───────────────────────────────
 
@@ -213,6 +216,7 @@ object Evaluator:
     def parseAdd(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
       val (lv, rest) = parseMul(items)
       parseAddRest(lv, rest)
+    end parseAdd
 
     def parseAddRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
       items match
@@ -238,6 +242,7 @@ object Evaluator:
     def parseMul(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
       val (lv, rest) = parsePrimary(items)
       parseMulRest(lv, rest)
+    end parseMul
 
     def parseMulRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
       items match
@@ -264,7 +269,7 @@ object Evaluator:
     // Primary: optional unary '-' then a single MathExpr
     def parsePrimary(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
       items match
-        case Nil => (EvalError("Unexpected end of expression"), Nil)
+        case Nil                   => (EvalError("Unexpected end of expression"), Nil)
         case Operator("-") :: rest =>
           val (v, remaining) = parsePrimary(rest)
           val negated = v match
@@ -275,7 +280,8 @@ object Evaluator:
         case expr :: rest => (evaluateNumeric(expr, env), rest)
 
     val (result, remaining) = parseAdd(exprs)
-    if remaining.nonEmpty then
-      EvalError(s"Unexpected elements in ExprSeq: ${remaining.map(_.getClass.getSimpleName).mkString(", ")}")
-    else
-      result
+    if remaining.nonEmpty then EvalError(s"Unexpected elements in ExprSeq: ${remaining.map(_.getClass.getSimpleName).mkString(", ")}")
+    else result
+    end if
+  end evalInfixSeq
+end Evaluator

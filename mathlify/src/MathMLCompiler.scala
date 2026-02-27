@@ -12,18 +12,20 @@ object MathMLCompiler:
     val e = dom.document.createElementNS(NS, tag)
     e.setAttribute("data-mathlify-id", path)
     e
+  end elem
 
   private def moElem(symbol: String, path: String): Element =
     val e = elem("mo", path)
     e.appendChild(dom.document.createTextNode(symbol))
     e
+  end moElem
 
   private def prec(expr: MathExpr): Int = expr match
-    case _: Add | _: Sub           => 1
-    case _: Mul | _: Fraction      => 2
-    case _: Neg                    => 3
-    case _: Pow                    => 4
-    case _                         => 99
+    case _: Add | _: Sub      => 1
+    case _: Mul | _: Fraction => 2
+    case _: Neg               => 3
+    case _: Pow               => 4
+    case _                    => 99
 
   private def withParens(expr: MathExpr, minPrec: Int, path: String): Element =
     if prec(expr) < minPrec then
@@ -32,8 +34,7 @@ object MathMLCompiler:
       row.appendChild(compile(expr, s"$path.inner"))
       row.appendChild(moElem(")", s"$path.close"))
       row
-    else
-      compile(expr, path)
+    else compile(expr, path)
 
   def compile(expr: MathExpr, path: String = "0"): Element =
     expr match
@@ -93,7 +94,7 @@ object MathMLCompiler:
         // base needs parens if Add/Sub/Mul/Neg/Fraction
         val baseElem = base match
           case _: Add | _: Sub | _: Mul | _: Neg | _: Fraction => withParens(base, 99, s"$path.0")
-          case _                                                 => compile(base, s"$path.0")
+          case _                                               => compile(base, s"$path.0")
         msup.appendChild(baseElem)
         // exponent in an mrow
         val expRow = elem("mrow", s"$path.1")
@@ -112,12 +113,13 @@ object MathMLCompiler:
 
       case FunctionCall(name, args) =>
         val row = elem("mrow", path)
-        val mi  = elem("mi", s"$path.name")
+        val mi = elem("mi", s"$path.name")
         mi.appendChild(dom.document.createTextNode(name))
         row.appendChild(mi)
         row.appendChild(moElem("(", s"$path.open"))
         args.zipWithIndex.foreach { case (arg, i) =>
           if i > 0 then row.appendChild(moElem(",", s"$path.comma$i"))
+          end if
           row.appendChild(compile(arg, s"$path.$i"))
         }
         row.appendChild(moElem(")", s"$path.close"))
@@ -141,7 +143,7 @@ object MathMLCompiler:
         mroot
 
       case Sum(index, lower, upper, body) =>
-        val row       = elem("mrow", path)
+        val row = elem("mrow", path)
         val underover = elem("munderover", s"$path.0")
         underover.appendChild(moElem("∑", s"$path.0.0"))
         // Lower: <mrow>index = lower</mrow>
@@ -156,7 +158,7 @@ object MathMLCompiler:
         row
 
       case Integral(variable, lower, upper, body) =>
-        val row       = elem("mrow", path)
+        val row = elem("mrow", path)
         val underover = elem("munderover", s"$path.0")
         underover.appendChild(moElem("∫", s"$path.0.0"))
         underover.appendChild(compile(lower, s"$path.0.1"))
@@ -179,6 +181,7 @@ object MathMLCompiler:
         row.appendChild(moElem("(", s"$path.open"))
         elements.zipWithIndex.foreach { case (el, i) =>
           if i > 0 then row.appendChild(moElem(",", s"$path.comma$i"))
+          end if
           row.appendChild(compile(el, s"$path.$i"))
         }
         row.appendChild(moElem(")", s"$path.close"))
@@ -193,7 +196,9 @@ object MathMLCompiler:
             val idx = row * rowStride + col * colStride + offset
             mtd.appendChild(compile(elements(idx), s"$path.$row.$col.0"))
             mtr.appendChild(mtd)
+          end for
           table.appendChild(mtr)
+        end for
         table
 
       case Subscript(base, sub) =>
@@ -252,9 +257,11 @@ object MathMLCompiler:
 
       case BracketGroup(open, close, content) =>
         val row = elem("mrow", path)
-        if open.nonEmpty  then row.appendChild(moElem(open,  s"$path.open"))
+        if open.nonEmpty then row.appendChild(moElem(open, s"$path.open"))
+        end if
         row.appendChild(compile(content, s"$path.0"))
         if close.nonEmpty then row.appendChild(moElem(close, s"$path.close"))
+        end if
         row
 
       case Enclose(notation, content) =>
@@ -274,3 +281,5 @@ object MathMLCompiler:
     math.setAttribute("data-mathlify-id", "root")
     math.appendChild(compile(expr, "0"))
     math
+  end toMathML
+end MathMLCompiler
