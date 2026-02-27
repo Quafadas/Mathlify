@@ -532,10 +532,6 @@ object AsciiMath:
 
           case LEFTBRACKET =>
             val (innerExprs, rest1) = parseExpr(rest0, rightbracket = false, depth = depth + 1)
-            val inner = innerExprs match
-              case Nil     => Symbol("")
-              case List(e) => e
-              case es      => ExprSeq(es)
             val restAfterRB = skipWS(rest1)
             val (rbOpt, rest2) = getSymbol(restAfterRB) match
               case Some(rb) if rb.ttype == RIGHTBRACKET =>
@@ -543,10 +539,23 @@ object AsciiMath:
               case _ =>
                 (None, rest1)
             val finalNode =
-              if sym.invisible then inner
+              if sym.invisible then
+                innerExprs match
+                  case Nil     => Symbol("")
+                  case List(e) => e
+                  case es      => ExprSeq(es)
               else
                 val closeStr = rbOpt.map(_.output).getOrElse("")
-                BracketGroup(sym.output, closeStr, inner)
+                val matrixOpt =
+                  if sym.input == "[" && closeStr == "]" then tryBuildMatrix(innerExprs)
+                  else None
+                matrixOpt.getOrElse {
+                  val inner = innerExprs match
+                    case Nil     => Symbol("")
+                    case List(e) => e
+                    case es      => ExprSeq(es)
+                  BracketGroup(sym.output, closeStr, inner)
+                }
             (Some(finalNode), rest2)
 
           case TEXTTYPE =>
@@ -633,6 +642,40 @@ object AsciiMath:
       case "underset"         => Under(arg2, arg1)
       case "color"            => Color(extractText(arg1), arg2)
       case _                  => ExprSeq(List(arg1, arg2))
+
+  // ── Matrix helpers ───────────────────────────────────────────────────────
+
+  private def tryBuildMatrix(innerExprs: List[MathExpr]): Option[MathExpr] =
+    // Requires alternating BracketGroup("[","]",...) and Operator(",") with at least 2 rows.
+    // Minimum 3 elements: row, comma, row.
+    if innerExprs.length < 3 then return None
+    val valid = innerExprs.zipWithIndex.forall {
+      case (BracketGroup("[", "]", _), i) => i % 2 == 0
+      case (Operator(","), i)             => i % 2 == 1
+      case _                              => false
+    }
+    if !valid then return None
+    val rowContents = innerExprs.collect { case BracketGroup("[", "]", c) => c }
+    if rowContents.length < 2 then return None
+    val rows    = rowContents.map(extractCells)
+    val numCols = rows.head.length
+    if numCols == 0 || !rows.forall(_.length == numCols) then return None
+    Some(BracketGroup("[", "]", Matrix(rows.flatten, rows.length, numCols, numCols, 1, 0)))
+
+  private def extractCells(rowContent: MathExpr): List[MathExpr] =
+    val exprs = rowContent match
+      case ExprSeq(es) => es
+      case single      => List(single)
+    val groups = exprs.foldLeft(List(List.empty[MathExpr])) { (acc, e) =>
+      e match
+        case Operator(",") => acc :+ List.empty[MathExpr]
+        case other         => acc.init :+ (acc.last :+ other)
+    }
+    groups.map {
+      case Nil     => Symbol("")
+      case List(e) => e
+      case es      => ExprSeq(es)
+    }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 

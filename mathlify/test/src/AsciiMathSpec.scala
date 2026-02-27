@@ -445,3 +445,84 @@ class AsciiMathSpec extends AnyFunSuite:
         assert(mfrac.tagName.toLowerCase == "mfrac")
       case Left(err) => fail(s"parse error: $err")
   }
+
+  // ── 18. Matrix ────────────────────────────────────────────────────────────
+
+  test("AM: [[a,b],[c,d]] -> matrix") {
+    check(
+      "[[a,b],[c,d]]",
+      BracketGroup(
+        "[",
+        "]",
+        Matrix(
+          List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+          2,
+          2,
+          2,
+          1,
+          0
+        )
+      )
+    )
+  }
+
+  test("AM: [[1,2],[3,4],[5,6]] -> 3x2 matrix") {
+    check(
+      "[[1,2],[3,4],[5,6]]",
+      BracketGroup(
+        "[",
+        "]",
+        Matrix(
+          List(Number(1.0), Number(2.0), Number(3.0), Number(4.0), Number(5.0), Number(6.0)),
+          3,
+          2,
+          2,
+          1,
+          0
+        )
+      )
+    )
+  }
+
+  test("AM: [[a,b]] (single row) -> plain bracket group, not matrix") {
+    check(
+      "[[a,b]]",
+      BracketGroup(
+        "[",
+        "]",
+        BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b"))))
+      )
+    )
+  }
+
+  test("AM: [[a,b],[c]] (inconsistent columns) -> plain bracket group, not matrix") {
+    check(
+      "[[a,b],[c]]",
+      BracketGroup(
+        "[",
+        "]",
+        ExprSeq(
+          List(
+            BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b")))),
+            Operator(","),
+            BracketGroup("[", "]", Symbol("c"))
+          )
+        )
+      )
+    )
+  }
+
+  test("MathML: [[a,b],[c,d]] produces mrow with mtable inside brackets") {
+    AsciiMath.translate("[[a,b],[c,d]]") match
+      case Right(ast) =>
+        val math = MathMLCompiler.toMathML(ast)
+        val mrow = math.firstChild.asInstanceOf[dom.Element]
+        assert(mrow.tagName.toLowerCase == "mrow")
+        assert(mrow.childNodes.length == 3)
+        assert(mrow.firstChild.asInstanceOf[dom.Element].textContent == "[")
+        val mtable = mrow.childNodes.item(1).asInstanceOf[dom.Element]
+        assert(mtable.tagName.toLowerCase == "mtable")
+        assert(mtable.childNodes.length == 2)
+        assert(mrow.lastChild.asInstanceOf[dom.Element].textContent == "]")
+      case Left(err) => fail(s"parse error: $err")
+  }
