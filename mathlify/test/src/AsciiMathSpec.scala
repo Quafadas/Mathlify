@@ -500,4 +500,46 @@ class AsciiMathSpec extends AnyFunSuite:
         assert(mtable.childNodes.length == 2, s"expected 2 rows, got ${mtable.childNodes.length}")
       case Left(err) => fail(s"parse error: $err")
   }
+
+  // ── 19. Row matrices with square brackets ─────────────────────────────────
+
+  test("AM: [[a,b],[c,d]] -> 2x2 matrix with square brackets") {
+    check(
+      "[[a,b],[c,d]]",
+      BracketGroup(
+        "[",
+        "]",
+        Matrix(
+          List(Symbol("a"), Symbol("b"), Symbol("c"), Symbol("d")),
+          2,
+          2,
+          2,
+          1,
+          0
+        )
+      )
+    )
+  }
+
+  test("AM: [[a,b]] (single row) -> plain bracket group, not matrix") {
+    check(
+      "[[a,b]]",
+      BracketGroup("[", "]", BracketGroup("[", "]", ExprSeq(List(Symbol("a"), Operator(","), Symbol("b")))))
+    )
+  }
+
+  test("MathML: [[a,b],[c,d]] produces mrow with mtable inside square brackets") {
+    AsciiMath.translate("[[a,b],[c,d]]") match
+      case Right(ast) =>
+        val math = MathMLCompiler.toMathML(ast)
+        val mrow = math.firstChild.asInstanceOf[dom.Element]
+        assert(mrow.tagName.toLowerCase == "mrow")
+        assert(mrow.childNodes.length == 3)
+        assert(mrow.firstChild.asInstanceOf[dom.Element].textContent == "[")
+        val mtable = mrow.childNodes.item(1).asInstanceOf[dom.Element]
+        assert(mtable.tagName.toLowerCase == "mtable")
+        assert(mtable.childNodes.length == 2)
+        assert(mrow.lastChild.asInstanceOf[dom.Element].textContent == "]")
+      case Left(err) => fail(s"parse error: $err")
+  }
 end AsciiMathSpec

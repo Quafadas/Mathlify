@@ -271,15 +271,23 @@ object AsciiMath:
     inner match
       case ExprSeq(elems) =>
         @annotation.tailrec
-        def extractRows(remaining: List[MathExpr], acc: List[MathExpr]): Option[List[MathExpr]] =
+        def extractRows(
+            open: String,
+            close: String,
+            remaining: List[MathExpr],
+            acc: List[MathExpr]
+        ): Option[List[MathExpr]] =
           remaining match
-            case Nil                                       => Some(acc)
-            case BracketGroup("(", ")", rowContent) :: Nil =>
+            case Nil                                              => Some(acc)
+            case BracketGroup(`open`, `close`, rowContent) :: Nil =>
               Some(acc :+ rowContent)
-            case BracketGroup("(", ")", rowContent) :: Operator(",") :: rest =>
-              extractRows(rest, acc :+ rowContent)
+            case BracketGroup(`open`, `close`, rowContent) :: Operator(",") :: rest =>
+              extractRows(open, close, rest, acc :+ rowContent)
             case _ => None
-        extractRows(elems, Nil).flatMap { rows =>
+        val rowsOpt =
+          extractRows("(", ")", elems, Nil)
+            .orElse(extractRows("[", "]", elems, Nil))
+        rowsOpt.flatMap { rows =>
           val rowCells = rows.map(splitRowByCols)
           val numCols = rowCells.head.length
           // Matrix(elements, rows, cols, rowStride, colStride, offset)
