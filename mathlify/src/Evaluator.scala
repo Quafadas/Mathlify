@@ -52,18 +52,28 @@ object Evaluator:
   def foldConstants(expr: MathExpr): MathExpr = expr match
     case Add(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b)) => Number(a + b)
-        case (fl, fr)               => Add(fl, fr)
+        case (Number(a), Number(b))              => Number(a + b)
+        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 + c2)))
+        case (fl, fr)                            => Add(fl, fr)
     case Sub(l, r) =>
       (foldConstants(l), foldConstants(r)) match
-        case (Number(a), Number(b)) => Number(a - b)
-        case (fl, fr)               => Sub(fl, fr)
+        case (Number(a), Number(b))              => Number(a - b)
+        case (Add(fl2, Number(c1)), Number(c2))  => foldConstants(Add(fl2, Number(c1 - c2)))
+        case (fl, fr)                            => Sub(fl, fr)
     case Mul(l, r) =>
       (foldConstants(l), foldConstants(r)) match
         case (Number(a), Number(b))                             => Number(a * b)
         case (fl, fr) if fl == Number(0.0) || fr == Number(0.0) => Number(0.0)
         case (Number(1.0), fr)                                  => fr
         case (fl, Number(1.0))                                  => fl
+        case (Number(a), Add(fl2, fr2))                         => foldConstants(Add(Mul(Number(a), fl2), Mul(Number(a), fr2)))
+        case (Number(a), Sub(fl2, fr2))                         => foldConstants(Sub(Mul(Number(a), fl2), Mul(Number(a), fr2)))
+        case (Add(fl2, fr2), Number(b))                         => foldConstants(Add(Mul(Number(b), fl2), Mul(Number(b), fr2)))
+        case (Sub(fl2, fr2), Number(b))                         => foldConstants(Sub(Mul(Number(b), fl2), Mul(Number(b), fr2)))
+        case (Number(a), Group(Add(fl2, fr2)))                  => foldConstants(Add(Mul(Number(a), fl2), Mul(Number(a), fr2)))
+        case (Number(a), Group(Sub(fl2, fr2)))                  => foldConstants(Sub(Mul(Number(a), fl2), Mul(Number(a), fr2)))
+        case (Group(Add(fl2, fr2)), Number(b))                  => foldConstants(Add(Mul(Number(b), fl2), Mul(Number(b), fr2)))
+        case (Group(Sub(fl2, fr2)), Number(b))                  => foldConstants(Sub(Mul(Number(b), fl2), Mul(Number(b), fr2)))
         case (fl, fr)                                           => Mul(fl, fr)
     case Div(l, r) =>
       (foldConstants(l), foldConstants(r)) match
