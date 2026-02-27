@@ -173,13 +173,14 @@ object AsciiMath:
                 (Some(rb), restAfterRB.substring(rb.input.length))
               case _ =>
                 (None, rest1)
+            val openStr  = if sym.invisible then "" else sym.output
+            val closeStr = rbOpt.map(rb => if rb.invisible then "" else rb.output).getOrElse("")
             val finalNode =
-              if sym.invisible then inner
+              if openStr.isEmpty && closeStr.isEmpty then inner
               else
-                val closeStr = rbOpt.map(_.output).getOrElse("")
                 tryBuildMatrix(inner) match
-                  case Some(matrix) => BracketGroup(sym.output, closeStr, matrix)
-                  case None         => BracketGroup(sym.output, closeStr, inner)
+                  case Some(matrix) => BracketGroup(openStr, closeStr, matrix)
+                  case None         => BracketGroup(openStr, closeStr, inner)
                 end match
             (Some(finalNode), rest2)
 
