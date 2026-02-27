@@ -313,9 +313,10 @@ class MathExprSpec extends AnyFunSuite:
   test("debug: inspect input bytes for sum parse") {
     val input = "sum_{i=1}^n x"
     val chars = input.map(c => s"'$c'(${c.toInt})").mkString(", ")
-    println(s"INPUT CHARS: $chars")
+    // println(s"INPUT CHARS: $chars")
     val result = MathParser.parse(input)
-    println(s"PARSE RESULT: $result")
+    // println(s"PARSE RESULT: $result")
+    assert(result.isRight)
   }
 
   // ─────────────────────────────────────────────────────────────────────────
