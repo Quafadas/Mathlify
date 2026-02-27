@@ -12,6 +12,7 @@ object V:
   val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M3"
   val jsDom: Dep = mvn"org.scala-js::scalajs-dom::2.2.0"
   val fastparse: Dep = mvn"com.lihaoyi::fastparse::3.1.1"
+  val vecxt: Dep = mvn"io.github.quafadas::vecxt::0.0.36"
   val scalaVersion = "3.8.2"
   val scalaJSVersion = "1.20.2"
   val munitVersion = "1.1.1"
