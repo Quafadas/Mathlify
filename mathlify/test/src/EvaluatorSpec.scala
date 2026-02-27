@@ -418,4 +418,46 @@ class EvaluatorSpec extends AnyFunSuite:
       case Right(expr) => assert(freeVars(expr) == Set("x", "y"))
       case Left(err)   => fail(s"parse error: $err")
   }
+
+  // ── 14. Function equation evaluation (f(x) = expr with x bound) ──────────
+
+  test("eval: AsciiMath 'f(x) = sqrt(x)' with x=2 gives sqrt(2)") {
+    AsciiMath.translate("f(x) = sqrt(x)") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 2.0)), math.sqrt(2.0))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("partialEval: AsciiMath 'f(x) = sqrt(x)' with x=2 gives sqrt(2)") {
+    AsciiMath.translate("f(x) = sqrt(x)") match
+      case Right(expr) => assertNumeric(partialEval(expr, Map("x" -> 2.0)), math.sqrt(2.0))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  // ── 15. Subscript variables ───────────────────────────────────────────────
+
+  test("freeVars: x_1 subscript variable returns 'x_1'") {
+    assert(freeVars(Subscript(Symbol("x"), Number(1.0))) == Set("x_1"))
+  }
+
+  test("freeVars: f(x_1, x_2, x_3) = x_1 + x_2 + x_3 has x_1, x_2, x_3 as free variables") {
+    AsciiMath.translate("f(x_1, x_2, x_3) = x_1 + x_2 + x_3") match
+      case Right(expr) => assert(freeVars(expr) == Set("x_1", "x_2", "x_3"))
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 'f(x_1, x_2, x_3) = x_1 + x_2 + x_3' with all bound evaluates") {
+    AsciiMath.translate("f(x_1, x_2, x_3) = x_1 + x_2 + x_3") match
+      case Right(expr) =>
+        assertNumeric(eval(expr, Map("x_1" -> math.Pi, "x_2" -> 1.0, "x_3" -> 2.0)), math.Pi + 3.0)
+      case Left(err) => fail(s"parse error: $err")
+  }
+
+  test("partialEval: 'f(x_1, x_2, x_3) = x_1 + x_2 + x_3' with only x_1=pi returns PartiallyReduced") {
+    AsciiMath.translate("f(x_1, x_2, x_3) = x_1 + x_2 + x_3") match
+      case Right(expr) =>
+        partialEval(expr, Map("x_1" -> math.Pi)) match
+          case PartiallyReduced(_) => () // expected
+          case other               => fail(s"expected PartiallyReduced but got $other")
+      case Left(err) => fail(s"parse error: $err")
+  }
 end EvaluatorSpec

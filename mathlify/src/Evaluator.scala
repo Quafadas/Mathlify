@@ -8,27 +8,28 @@ object Evaluator:
   // ── Free variable analysis ────────────────────────────────────────────────
 
   def freeVars(expr: MathExpr): Set[String] = expr match
-    case Number(_)                    => Set.empty
-    case Constant(_)                  => Set.empty
-    case Symbol(name)                 => Set(name)
-    case Add(l, r)                    => freeVars(l) ++ freeVars(r)
-    case Sub(l, r)                    => freeVars(l) ++ freeVars(r)
-    case Mul(l, r)                    => freeVars(l) ++ freeVars(r)
-    case Div(l, r)                    => freeVars(l) ++ freeVars(r)
-    case Pow(b, e)                    => freeVars(b) ++ freeVars(e)
-    case Neg(e)                       => freeVars(e)
-    case FunctionCall(_, args)        => args.flatMap(freeVars).toSet
-    case Fraction(n, d)               => freeVars(n) ++ freeVars(d)
-    case Root(deg, rad)               => deg.map(freeVars).getOrElse(Set.empty) ++ freeVars(rad)
-    case Sum(idx, lo, hi, body)       => freeVars(idx) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
-    case Integral(v, lo, hi, body)    => freeVars(v) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
-    case Group(e)                     => freeVars(e)
-    case MathVector(elems)            => elems.flatMap(freeVars).toSet
-    case Matrix(elems, _, _, _, _, _) => elems.flatMap(freeVars).toSet
-    case Subscript(b, s)              => freeVars(b) ++ freeVars(s)
-    case Superscript(b, s)            => freeVars(b) ++ freeVars(s)
-    case Operator(_)                  => Set.empty
-    case ExprSeq(exprs)               =>
+    case Number(_)                          => Set.empty
+    case Constant(_)                        => Set.empty
+    case Symbol(name)                       => Set(name)
+    case Add(l, r)                          => freeVars(l) ++ freeVars(r)
+    case Sub(l, r)                          => freeVars(l) ++ freeVars(r)
+    case Mul(l, r)                          => freeVars(l) ++ freeVars(r)
+    case Div(l, r)                          => freeVars(l) ++ freeVars(r)
+    case Pow(b, e)                          => freeVars(b) ++ freeVars(e)
+    case Neg(e)                             => freeVars(e)
+    case FunctionCall(_, args)              => args.flatMap(freeVars).toSet
+    case Fraction(n, d)                     => freeVars(n) ++ freeVars(d)
+    case Root(deg, rad)                     => deg.map(freeVars).getOrElse(Set.empty) ++ freeVars(rad)
+    case Sum(idx, lo, hi, body)             => freeVars(idx) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
+    case Integral(v, lo, hi, body)          => freeVars(v) ++ freeVars(lo) ++ freeVars(hi) ++ freeVars(body)
+    case Group(e)                           => freeVars(e)
+    case MathVector(elems)                  => elems.flatMap(freeVars).toSet
+    case Matrix(elems, _, _, _, _, _)       => elems.flatMap(freeVars).toSet
+    case Subscript(Symbol(base), Number(n)) => Set(s"${base}_${n.round.toInt}")
+    case Subscript(b, s)                    => freeVars(b) ++ freeVars(s)
+    case Superscript(b, s)                  => freeVars(b) ++ freeVars(s)
+    case Operator(_)                        => Set.empty
+    case ExprSeq(exprs)                     =>
       def goSeq(items: List[MathExpr]): Set[String] = items match
         case Nil                                                   => Set.empty
         case Symbol(_) :: (bg @ BracketGroup("(", ")", _)) :: rest =>
@@ -275,6 +276,12 @@ object Evaluator:
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Root")
+    case Subscript(Symbol(base), Number(n)) =>
+      val key = s"${base}_${n.round.toInt}"
+      env.get(key) match
+        case Some(v) => Numeric(v)
+        case None    => EvalError(s"Unbound variable: $key")
+      end match
     case Group(e)              => evaluateNumeric(e, env)
     case BracketGroup(_, _, c) => evaluateNumeric(c, env)
     case Fraction(n, d)        =>
@@ -316,6 +323,10 @@ object Evaluator:
             case (_, e: EvalError)        => e
             case _                        => EvalError("Cannot subtract")
           parseAddRest(combined, remaining)
+        case Operator("=") :: rest =>
+          // For function definition equations (e.g. f(x) = expr), evaluate the RHS.
+          val (rv, remaining) = parseAdd(rest)
+          (rv, remaining)
         case _ => (left, items)
 
     // Multiplicative: primary (('⋅' | '×' | '/') primary)*
