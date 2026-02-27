@@ -127,6 +127,8 @@ object Evaluator:
         case List(e) => e
         case other   => ExprSeq(other)
       end match
+    case Matrix(elements, rows, cols, rowStride, colStride, offset) =>
+      Matrix(elements.map(foldConstants), rows, cols, rowStride, colStride, offset)
     case other => other
 
   // ── Symbolic constant substitution ───────────────────────────────────────
@@ -159,6 +161,7 @@ object Evaluator:
     case Group(e)                                     => Group(substituteConstants(e))
     case ExprSeq(es)                                  => ExprSeq(es.map(substituteConstants))
     case BracketGroup(o, c, e)                        => BracketGroup(o, c, substituteConstants(e))
+    case Matrix(elements, rows, cols, rs, cs, offset) => Matrix(elements.map(substituteConstants), rows, cols, rs, cs, offset)
     case other                                        => other
 
   /** Parse an AsciiMath string and evaluate it to a constant Double if possible.
@@ -224,10 +227,11 @@ object Evaluator:
         case _                        => EvalError("Unexpected partial result in Sub")
     case Mul(l, r) =>
       (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
-        case (Numeric(a), Numeric(b)) => Numeric(a * b)
-        case (e: EvalError, _)        => e
-        case (_, e: EvalError)        => e
-        case _                        => EvalError("Unexpected partial result in Mul")
+        case (Numeric(a), Numeric(b))           => Numeric(a * b)
+        case (MatrixResult(a), MatrixResult(b)) => matMul(a, b)
+        case (e: EvalError, _)                  => e
+        case (_, e: EvalError)                  => e
+        case _                                  => EvalError("Unexpected partial result in Mul")
     case Div(l, r) =>
       (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
         case (Numeric(a), Numeric(b)) =>
@@ -285,6 +289,17 @@ object Evaluator:
         case (e: EvalError, _) => e
         case (_, e: EvalError) => e
         case _                 => EvalError("Unexpected partial result in Fraction")
+    case Matrix(elements, rows, cols, rowStride, colStride, offset) =>
+      val results = elements.map(e => evaluateNumeric(e, env))
+      results.collectFirst { case e: EvalError => e } match
+        case Some(err) => err
+        case None      =>
+          val doubles = results.collect { case Numeric(v) => v }
+          val matData = Vector.tabulate(rows, cols) { (i, j) =>
+            doubles(offset + i * rowStride + j * colStride)
+          }
+          MatrixResult(matData)
+      end match
     case ExprSeq(exprs) => evalInfixSeq(exprs, env)
     case other          => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
 
@@ -329,10 +344,11 @@ object Evaluator:
         case Operator(op) :: rest if op == "⋅" || op == "×" || op == "*" =>
           val (rv, remaining) = parsePrimary(rest)
           val combined = (left, rv) match
-            case (Numeric(a), Numeric(b)) => Numeric(a * b)
-            case (e: EvalError, _)        => e
-            case (_, e: EvalError)        => e
-            case _                        => EvalError("Cannot multiply")
+            case (Numeric(a), Numeric(b))           => Numeric(a * b)
+            case (MatrixResult(a), MatrixResult(b)) => matMul(a, b)
+            case (e: EvalError, _)                  => e
+            case (_, e: EvalError)                  => e
+            case _                                  => EvalError("Cannot multiply")
           parseMulRest(combined, remaining)
         case Operator("/") :: rest =>
           val (rv, remaining) = parsePrimary(rest)
@@ -438,5 +454,21 @@ object Evaluator:
       case (Some(op), Right(terms)) => Operator(op) :: terms
     }
   end simplifyExprSeq
+
+  // ── Matrix multiplication ─────────────────────────────────────────────────
+
+  private def matMul(a: Vector[Vector[Double]], b: Vector[Vector[Double]]): EvalResult =
+    val aRows = a.length
+    val aCols = if a.isEmpty then 0 else a(0).length
+    val bRows = b.length
+    val bCols = if b.isEmpty then 0 else b(0).length
+    if aCols != bRows then EvalError(s"Matrix dimension mismatch: ${aRows}×$aCols cannot multiply ${bRows}×$bCols")
+    else
+      val result = Vector.tabulate(aRows, bCols) { (i, j) =>
+        (0 until aCols).map(k => a(i)(k) * b(k)(j)).sum
+      }
+      MatrixResult(result)
+    end if
+  end matMul
 
 end Evaluator
