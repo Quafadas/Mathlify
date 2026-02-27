@@ -333,4 +333,38 @@ class EvaluatorSpec extends AnyFunSuite:
       case ExprSeq(List(Symbol("x"), Operator("+"), Number(7.0))) => ()
       case other => fail(s"expected ExprSeq([x, +, 7]) but got $other")
   }
+
+  // ── 11. Partial reduction: distribute multiplication over addition ─────────
+
+  test("foldConstants: 2 * (x + 3 + 4) reduces to Add(Mul(2, x), 14)") {
+    val expr = Mul(Number(2.0), Group(Add(Add(Symbol("x"), Number(3.0)), Number(4.0))))
+    val folded = foldConstants(expr)
+    assert(folded == Add(Mul(Number(2.0), Symbol("x")), Number(14.0)))
+  }
+
+  test("partialEval: 2 * (x + 3 + 4) returns PartiallyReduced with 2*x + 14") {
+    val expr = Mul(Number(2.0), Group(Add(Add(Symbol("x"), Number(3.0)), Number(4.0))))
+    partialEval(expr) match
+      case PartiallyReduced(Add(Mul(Number(2.0), Symbol("x")), Number(14.0))) => ()
+      case other => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
+  }
+
+  test("partialEval: MathParser 2*(x+3+4) reduces to 2*x + 14") {
+    MathParser.parse("2*(x+3+4)") match
+      case Right(expr) =>
+        partialEval(expr) match
+          case PartiallyReduced(Add(Mul(Number(2.0), Symbol("x")), Number(14.0))) => ()
+          case other => fail(s"expected PartiallyReduced(2*x + 14) but got $other")
+      case Left(err) => fail(s"parse error: $err")
+  }
+
+  test("foldConstants: distribute Number * Add without Group: 3 * (x + 2) = 3*x + 6") {
+    val expr = Mul(Number(3.0), Add(Symbol("x"), Number(2.0)))
+    assert(foldConstants(expr) == Add(Mul(Number(3.0), Symbol("x")), Number(6.0)))
+  }
+
+  test("foldConstants: (x + 3) + 4 collects constants to x + 7") {
+    val expr = Add(Add(Symbol("x"), Number(3.0)), Number(4.0))
+    assert(foldConstants(expr) == Add(Symbol("x"), Number(7.0)))
+  }
 end EvaluatorSpec
