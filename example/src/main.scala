@@ -1,5 +1,7 @@
 import com.raquo.laminar.api.L.*
 import org.scalajs.dom
+import javax.management.QueryEval
+import io.github.nguyenyou.webawesome.laminar.*
 
 @main def entryPt(): Unit =
   renderOnDomContentLoaded(
@@ -15,15 +17,15 @@ def app =
   }
   val varMap = Var(Map.empty[String, Double])
   div(
+    Button()("WebAwesome"),
     h1(s"Ascii Parser"),
     // https://demo.laminar.dev/app/form/controlled-inputs
     p("Enter an AsciiMath expression:"),
-    input(
-      typ := "text",
-      controlled(
-        value <-- asciiVar.signal,
-        onInput.mapToValue --> asciiVar.writer
-      )
+    Textarea()(
+      typ := "text",      
+      value <-- asciiVar.signal,
+      onInput.mapToValue --> asciiVar.writer
+    
     ),
     p(child <-- asciiResult.map { s =>
       s
@@ -45,7 +47,7 @@ def app =
                   typ := "text",
                   onInput.mapToValue --> { value =>
                     varMap.update { m =>
-                      m + (v -> value.toDoubleOption.getOrElse(0.0))
+                      m + (v -> mathlify.Evaluator.parseConstant(value).getOrElse(Double.NaN))
                     }
                   }
                 )

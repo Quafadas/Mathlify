@@ -16,6 +16,7 @@ object V:
   val scalaVersion = "3.8.2"
   val scalaJSVersion = "1.20.2"
   val munitVersion = "1.1.1"
+  val webawesome = mvn"io.github.nguyenyou::webawesome-laminar::3.0.0"
 end V
 
 trait MathlifyPublishModule extends PublishModule, ScalaModule:

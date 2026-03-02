@@ -9,14 +9,26 @@ import cats.effect.unsafe.implicits.global
 import fs2.concurrent.Topic
 import mill.api.BuildCtx
 
-object `package` extends TestScalaJSModule, TestModule.ScalaTest:
+object `package` extends ScalaJSModule:
   def scalaVersion = build.V.scalaVersion
   def scalaJSVersion = build.V.scalaJSVersion
   def moduleDeps = Seq(build.mathlify)
 
+  def moduleKind = Task {
+    ModuleKind.ESModule
+  }
+
+  def mvnDeps = Seq(    
+    build.V.webawesome
+  )
+
   def sitePathOnly = Task {
     fastLinkJS().dest.path.toString()
   }
+
+  override def scalaJSImportMap = Seq(
+    ESModuleImportMapping.Prefix("@awesome.me/webawesome/dist/", "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/")
+  )
 
   /** The port number for the live-reload development server.
     *
@@ -72,6 +84,7 @@ object `package` extends TestScalaJSModule, TestModule.ScalaTest:
 <html>
   <head>
     <title>Mathlify</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/styles/webawesome.css" />
   </head>
   <body>
     <div id="app"></div>
