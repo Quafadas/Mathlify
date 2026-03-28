@@ -1,18 +1,17 @@
 package build.example
 
-import io.github.quafadas.sjsls.LiveServerConfig
-
 import mill.*, scalalib.*, scalajslib.*
 import mill.scalajslib.api.*
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
-import fs2.concurrent.Topic
-import mill.api.BuildCtx
-import io.github.quafadas.ScalaJsWebAppModule
+import io.github.quafadas.sjsls.ScalaJsWebAppModule
 
-object `package` extends ScalaJsWebAppModule, TestScalaJSModule, TestModule.ScalaTest:
+object `package` extends ScalaJsWebAppModule:
   def scalaVersion = build.V.scalaVersion
   def moduleDeps = Seq(build.mathlify)
+
+  override def moduleSplitStyle = ModuleSplitStyle.SmallModulesFor(
+    "mathlify",
+    "mathlify.example"
+  )
 
   def moduleKind = Task {
     ModuleKind.ESModule
@@ -20,5 +19,14 @@ object `package` extends ScalaJsWebAppModule, TestScalaJSModule, TestModule.Scal
 
   def mvnDeps = Seq(
     build.V.webawesome
+  )
+
+  override def scalaJSImportMap = Seq(
+    ESModuleImportMapping.Prefix("@awesome.me/webawesome/dist/", "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.4.0/dist-cdn/")
+  )
+
+  override def externalStylesheets = Seq(
+    "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.4.0/dist-cdn/styles/webawesome.css",
+    "./custom.css"
   )
 end `package`

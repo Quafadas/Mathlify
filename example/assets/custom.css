@@ -1,0 +1,362 @@
+.page-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin: 0.25rem 0;
+  color: #3b5998;
+}
+
+.page-header .subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-top: 0;
+}
+
+.page-header wa-icon {
+  font-size: 2rem;
+  color: #5b7bd5;
+}
+
+.cards-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+wa-card {
+  --padding: 1.5rem;
+}
+
+wa-card [slot="header"] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+wa-card p:first-of-type {
+  margin-top: 0;
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.rendered-math {
+  background: #f8f9fa;
+  border: 1px solid #e2e4e9;
+  border-radius: var(--wa-border-radius-medium);
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  display: flex;
+  justify-content: center;
+  min-height: 2.5rem;
+  align-items: center;
+}
+
+wa-textarea {
+  width: 100%;
+}
+
+.variable-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.variable-inputs wa-input {
+  flex: 1 1 120px;
+  max-width: 200px;
+}
+
+.eval-result {
+  margin-top: 0.5rem;
+}
+
+.eval-result wa-callout {
+  margin-bottom: 0.75rem;
+}
+
+.numeric-result {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+@media (min-width: 700px) {
+  .cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .expression-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Header link */
+.header-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.header-link:hover h1 {
+  color: #5b7bd5;
+}
+
+/* Home page cards */
+.home-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-card p {
+  flex: 1;
+}
+
+.home-card wa-button {
+  margin-top: 1rem;
+  align-self: flex-start;
+}
+
+/* Proof & solver */
+.proof-section,
+.solver-section {
+  margin-bottom: 2rem;
+}
+
+.proof-section h2,
+.solver-section h2 {
+  color: #3b5998;
+  margin-bottom: 0.5rem;
+}
+
+.proof-step {
+  margin-bottom: 1.25rem;
+}
+
+.proof-step h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: #495057;
+}
+
+.proof-note {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+.qed-callout {
+  margin-top: 1.5rem;
+}
+
+.solver-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.coeff-input {
+  flex: 0 1 120px;
+}
+
+.solver-equation {
+  background: #f8f9fa;
+  border: 1px solid #e2e4e9;
+  border-radius: var(--wa-border-radius-medium);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.solver-step {
+  padding-left: 1rem;
+  border-left: 3px solid #5b7bd5;
+}
+
+wa-divider {
+  margin: 2rem 0;
+}
+
+/* ── Matrix page ─────────────────────────────────────────────────────────── */
+
+.matrix-page h2 {
+  color: #3b5998;
+  margin-bottom: 0.5rem;
+}
+
+.matrix-intro {
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.matrix-intro code {
+  background: #f0f0f0;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.matrix-ascii-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .matrix-ascii-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.matrix-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.matrix-input-group wa-textarea {
+  width: 100%;
+}
+
+.matrix-preview {
+  background: #f8f9fa;
+  border: 1px solid #e2e4e9;
+  border-radius: var(--wa-border-radius-medium);
+  padding: 0.75rem;
+  display: flex;
+  justify-content: center;
+  min-height: 2rem;
+  font-size: 1.2rem;
+}
+
+.matrix-layout {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.matrix-op {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #3b5998;
+}
+
+.matrix-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.matrix-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #3b5998;
+}
+
+.matrix-bracket {
+  border-left: 3px solid #3b5998;
+  border-right: 3px solid #3b5998;
+  border-radius: 4px;
+  padding: 0.35rem;
+}
+
+.matrix-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.matrix-cell {
+  width: 52px;
+  height: 36px;
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #fff;
+  transition: background 0.15s, box-shadow 0.15s;
+  padding: 0 4px;
+}
+
+.matrix-cell:focus {
+  outline: 2px solid #5b7bd5;
+  outline-offset: -1px;
+}
+
+.result-cell {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+/* Highlight states */
+.highlight-row {
+  background: #dbeafe !important;
+  box-shadow: inset 0 0 0 2px #93b5f5;
+}
+
+.highlight-col {
+  background: #fef3c7 !important;
+  box-shadow: inset 0 0 0 2px #f6c547;
+}
+
+.highlight-cell {
+  background: #d1fae5 !important;
+  box-shadow: inset 0 0 0 2px #34d399;
+}
+
+/* Calculation detail card */
+.calc-detail wa-card {
+  margin-top: 1rem;
+}
+
+.calc-terms {
+  font-size: 1.1rem;
+  line-height: 2;
+}
+
+.calc-term {
+  white-space: nowrap;
+}
+
+.calc-a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.calc-b {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.calc-eq {
+  font-weight: 600;
+}
+
+.calc-result {
+  color: #059669;
+  font-weight: 700;
+  font-size: 1.2rem;
+}

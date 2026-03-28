@@ -460,4 +460,28 @@ class EvaluatorSpec extends AnyFunSuite:
           case other               => fail(s"expected PartiallyReduced but got $other")
       case Left(err) => fail(s"parse error: $err")
   }
+
+  // ── 15. Symbolic constant e in evaluation ──────────────────────────────────
+
+  test("freeVars: Symbol(e) is not a free variable") {
+    assert(freeVars(Symbol("e")) == Set.empty)
+  }
+
+  test("eval: AsciiMath 'sqrt(x) + e^x' with x=0 gives 0 + 1 = 1") {
+    AsciiMath.translate("sqrt(x) + e^x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 0.0)), 1.0)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 'sqrt(x) + e^x' with x=1 gives 1 + e") {
+    AsciiMath.translate("sqrt(x) + e^x") match
+      case Right(expr) => assertNumeric(eval(expr, Map("x" -> 1.0)), 1.0 + math.E)
+      case Left(err)   => fail(s"parse error: $err")
+  }
+
+  test("eval: AsciiMath 'e^2' evaluates to e squared") {
+    AsciiMath.translate("e^2") match
+      case Right(expr) => assertNumeric(eval(expr), math.E * math.E)
+      case Left(err)   => fail(s"parse error: $err")
+  }
 end EvaluatorSpec

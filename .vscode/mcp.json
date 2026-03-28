@@ -3,6 +3,12 @@
     "Mathlify-metals": {
       "url": "http://localhost:53081/mcp",
       "type": "http"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }

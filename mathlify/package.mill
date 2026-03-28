@@ -9,7 +9,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   def mvnDeps = Seq(
     build.V.jsDom,
     build.V.laminar,
-    build.V.fastparse    
+    build.V.fastparse
   )
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:
@@ -17,7 +17,8 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
       mvn"org.scalameta::munit::1.2.2",
-      mvn"com.raquo::domtestutils::19.0.0"
+      mvn"com.raquo::domtestutils::19.0.0",
+      build.V.jsDom
     )
     def moduleDeps = Seq(build.mathlify)
     override def jsEnvConfig = JsEnvConfig.JsDom()

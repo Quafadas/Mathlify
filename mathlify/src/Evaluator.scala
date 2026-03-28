@@ -8,9 +8,10 @@ object Evaluator:
   // ── Free variable analysis ────────────────────────────────────────────────
 
   def freeVars(expr: MathExpr): Set[String] = expr match
-    case Number(_)                          => Set.empty
-    case Constant(_)                        => Set.empty
-    case Symbol(name)                       => Set(name)
+    case Number(_)                                        => Set.empty
+    case Constant(_)                                      => Set.empty
+    case Symbol(name) if symbolicConstants.contains(name) => Set.empty
+    case Symbol(name)                                     => Set(name)
     case Add(l, r)                          => freeVars(l) ++ freeVars(r)
     case Sub(l, r)                          => freeVars(l) ++ freeVars(r)
     case Mul(l, r)                          => freeVars(l) ++ freeVars(r)
@@ -160,6 +161,9 @@ object Evaluator:
     case Group(e)                                     => Group(substituteConstants(e))
     case ExprSeq(es)                                  => ExprSeq(es.map(substituteConstants))
     case BracketGroup(o, c, e)                        => BracketGroup(o, c, substituteConstants(e))
+    case Superscript(b, s)                            => Superscript(substituteConstants(b), substituteConstants(s))
+    case Subscript(b, s)                              => Subscript(substituteConstants(b), substituteConstants(s))
+    case SubSup(b, s, sup)                            => SubSup(substituteConstants(b), substituteConstants(s), substituteConstants(sup))
     case other                                        => other
 
   /** Parse an AsciiMath string and evaluate it to a constant Double if possible.
@@ -180,7 +184,7 @@ object Evaluator:
   // ── Full evaluation ───────────────────────────────────────────────────────
 
   def eval(expr: MathExpr, env: Map[String, Double] = Map.empty): EvalResult =
-    val folded = foldConstants(expr)
+    val folded = foldConstants(substituteConstants(expr))
     if !isEvaluable(folded, env) then EvalError(s"Unbound variables: ${(freeVars(folded) -- env.keySet).mkString(", ")}")
     else evaluateNumeric(folded, env)
     end if
@@ -189,7 +193,7 @@ object Evaluator:
   // ── Partial evaluation ────────────────────────────────────────────────────
 
   def partialEval(expr: MathExpr, env: Map[String, Double] = Map.empty): EvalResult =
-    val folded = foldConstants(expr)
+    val folded = foldConstants(substituteConstants(expr))
     if isEvaluable(folded, env) then evaluateNumeric(folded, env)
     else PartiallyReduced(folded)
     end if

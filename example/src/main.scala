@@ -1,7 +1,14 @@
+package mathlify.example
+
 import com.raquo.laminar.api.L.*
 import org.scalajs.dom
-import javax.management.QueryEval
 import io.github.nguyenyou.webawesome.laminar.*
+
+enum Page:
+  case Home, Expression, Quadratic, Matrix
+
+object Router:
+  val currentPage: Var[Page] = Var(Page.Home)
 
 @main def entryPt(): Unit =
   renderOnDomContentLoaded(
@@ -10,86 +17,24 @@ import io.github.nguyenyou.webawesome.laminar.*
   )
 
 def app =
-  val simpleVar = Var("x + 2")
-  val asciiVar = Var("sqrt(x)")
-  var asciiResult = asciiVar.signal.map { s =>
-    mathlify.AsciiMath.translate(s)
-  }
-  val varMap = Var(Map.empty[String, Double])
   div(
-    Button()("WebAwesome"),
-    h1(s"Ascii Parser"),
-    // https://demo.laminar.dev/app/form/controlled-inputs
-    p("Enter an AsciiMath expression:"),
-    Textarea()(
-      typ := "text",      
-      value <-- asciiVar.signal,
-      onInput.mapToValue --> asciiVar.writer
-    
-    ),
-    p(child <-- asciiResult.map { s =>
-      s
-        .map(mathlify.LaminarRenderer.render)
-        .getOrElse(div("Invalid expression"))
-
-    }),
-    h1("Free Variables"),
-    p("Set these variables in the context to see if the expression can be evaluated:"),
+    cls := "page-container",
     div(
-      children <-- asciiResult.map { s =>
-        s.fold(
-          err => Seq(p(s"Invalid expression - see above: $err")),
-          expr =>
-            mathlify.Evaluator.unboundVars(expr).toSeq.map { v =>
-              div(
-                s"$v = ",
-                input(
-                  typ := "text",
-                  onInput.mapToValue --> { value =>
-                    varMap.update { m =>
-                      m + (v -> mathlify.Evaluator.parseConstant(value).getOrElse(Double.NaN))
-                    }
-                  }
-                )
-              )
-            }
-        )
-      }
+      cls := "page-header",
+      a(
+        cls := "header-link",
+        onClick.preventDefault.mapTo(Page.Home) --> Router.currentPage.writer,
+        href := "#",
+        Icon()("calculator", cls := "header-icon"),
+        h1("Mathlify")
+      ),
+      p(cls := "subtitle", "An educational library of fun maths")
     ),
-    h1("Eval"),
-    p("We attempt to evaludate the expression, and if it contains free variables, we just show the reduced form."),
-    p(
-      "Can eval :",
-      child <-- asciiResult.combineWith(varMap.signal).map { case (s, vars) =>
-        s.fold(
-          err => s"No - $err",
-          expr =>
-            mathlify.Evaluator.isEvaluable(expr, vars) match
-              case true  => s"Yes"
-              case false => s"No - ${mathlify.Evaluator.eval(expr)}"
-        )
-      }
-    ),
-    p(child <-- asciiResult.combineWith(varMap.signal).map { case (s, vars) =>
-      s.fold(
-        err => s"Invalid expression - see above",
-        expr =>
-          mathlify.Evaluator.eval(expr, vars) match
-            case mathlify.EvalError(msg)                => s"Eval error: $msg"
-            case mathlify.Numeric(value)                => s"Numeric result: $value"
-            case mathlify.PartiallyReduced(reducedExpr) => s"Partially reduced: ${mathlify.LaminarRenderer.render(reducedExpr)}"
-      )
-    }),
-    h1("Partial Eval"),
-    div(children <-- asciiResult.combineWith(varMap.signal).map { case (s, vars) =>
-      s.fold(
-        err => Seq(p(s"Invalid expression - see above: $err")),
-        expr =>
-          mathlify.Evaluator.partialEval(expr, vars) match
-            case mathlify.EvalError(msg)                => Seq(p(s"Eval error: $msg"))
-            case mathlify.Numeric(value)                => Seq(p(s"Numeric result: $value"))
-            case mathlify.PartiallyReduced(reducedExpr) => Seq(p("Partially reduced:"), mathlify.LaminarRenderer.render(reducedExpr))
-      )
-    })
+    child <-- Router.currentPage.signal.map {
+      case Page.Home       => HomePage.render()
+      case Page.Expression => ExpressionPage.render()
+      case Page.Quadratic  => QuadraticPage.render()
+      case Page.Matrix     => MatrixPage.render()
+    }
   )
 end app

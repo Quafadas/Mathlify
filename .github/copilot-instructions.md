@@ -1,15 +1,21 @@
-# Mathlify 
+# Mathlify
 
 ## Working Effectively
 
-Mill is already setup for you. Currently it is configured via Mill's new YAML based configuration. 
+Mill build tool.
 
 - Build: A cold build can take up to 1 minute. Stay patient. Subsequent builds will be faster - incremental compilation and caching will speed things up.
 - Test: ./mill test
 - Format: ./mill mill.scalalib.scalafmt.ScalafmtModule/
-- Explore: ./mill resolve _ 
+- Explore: ./mill resolve _
+
+When developing the example project, run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_ and other commands to it will fail, because it's on the port.
+
+If you need access to it's logs, you'll have to kill the existing one and restart it.
 
 Always format before committing - CI will fail without correct formatting.
+
+For navigation and symbol information use scalex (see skill) or the metals MCP depending on the level of information needed.
 
 ## Folder Structure:
 
@@ -18,10 +24,11 @@ Always format before committing - CI will fail without correct formatting.
 - .github/workflows/: GitHub Actions workflows for CI/CD.
 - mathlify/src/: Source code for the project.
 - mathlify/test/src: Test code for the project.
+- example/: Example application using the mathlify library.
 
-## Validation: 
+## Validation:
 
-The primary form of validation is via unit testing. Mathlify should ensure that the elements it emits can be found in the dom. 
+The primary form of validation is via unit testing. Mathlify should ensure that the elements it emits can be found in the dom.
 
 Tests are writting using scala munit, see the folder structure for locations.
 
@@ -31,11 +38,11 @@ Uses github actions. The workflow is defined in .github/workflows/copilot-setup-
 
 # Vecxt Cheatsheet
 
-If you need to evaluate linear algebra expressions, you can use the Vecxt library. It is already included as a dependency in the build.mill file. You can import it in your Scala files and use its functionality for vector and matrix operations. Here's the vecxt cheatsheet. 
+If you need to evaluate linear algebra expressions, you can use the Vecxt library. It is already included as a dependency in the build.mill file. You can import it in your Scala files and use its functionality for vector and matrix operations. Here's the vecxt cheatsheet.
 
 ## vecxt vs NumPy vs MATLAB
 
-This cheatsheet compares common linear algebra operations across vecxt (Scala 3), NumPy (Python), and MATLAB. 
+This cheatsheet compares common linear algebra operations across vecxt (Scala 3), NumPy (Python), and MATLAB.
 
 ## Imports
 

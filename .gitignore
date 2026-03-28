@@ -8,3 +8,6 @@ out/*
 .metals/*
 node_modules/
 .bsp/*
+.cellar/
+.playwright-mcp/
+scripts/cellar
