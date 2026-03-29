@@ -22,7 +22,7 @@ object MatrixPage:
 
   private def parseMatrix(input: String): Either[String, ParsedMatrix] =
     mathlify.AsciiMath.translate(input.trim) match
-      case Left(err) => Left(err)
+      case Left(err)   => Left(err)
       case Right(expr) =>
         extractMatrix(expr) match
           case Some(m) => Right(m)
@@ -30,20 +30,21 @@ object MatrixPage:
 
   private def extractMatrix(expr: MathExpr): Option[ParsedMatrix] =
     expr match
-      case MathExpr.BracketGroup(_, _, inner) => extractMatrix(inner)
-      case MathExpr.Group(inner)              => extractMatrix(inner)
+      case MathExpr.BracketGroup(_, _, inner)          => extractMatrix(inner)
+      case MathExpr.Group(inner)                       => extractMatrix(inner)
       case MathExpr.Matrix(elems, rows, cols, _, _, _) =>
         val nums = elems.map(evalToDouble)
         if nums.forall(_.isDefined) then Some(ParsedMatrix(nums.map(_.get).toVector, rows, cols))
         else None
+        end if
       case _ => None
 
   private def evalToDouble(expr: MathExpr): Option[Double] =
     expr match
-      case MathExpr.Number(v) => Some(v)
+      case MathExpr.Number(v)               => Some(v)
       case MathExpr.Neg(MathExpr.Number(v)) => Some(-v)
-      case MathExpr.Group(e) => evalToDouble(e)
-      case _ =>
+      case MathExpr.Group(e)                => evalToDouble(e)
+      case _                                =>
         mathlify.Evaluator.eval(expr) match
           case mathlify.Numeric(v) => Some(v)
           case _                   => None
@@ -53,6 +54,8 @@ object MatrixPage:
   private def getCell(mat: Vector[Double], cols: Int, r: Int, c: Int): Double =
     val idx = r * cols + c
     if idx >= 0 && idx < mat.size then mat(idx) else 0.0
+    end if
+  end getCell
 
   private def multiply(a: ParsedMatrix, b: ParsedMatrix): ParsedMatrix =
     val result = Vector.newBuilder[Double]
@@ -60,17 +63,21 @@ object MatrixPage:
       for c <- 0 until b.cols do
         var sum = 0.0
         for k <- 0 until a.cols do sum += getCell(a.data, a.cols, r, k) * getCell(b.data, b.cols, k, c)
+        end for
         result += sum
+    end for
     ParsedMatrix(result.result(), a.rows, b.cols)
+  end multiply
 
   // ── Serialize back to AsciiMath ───────────────────────────────────────────
 
   private def toAscii(m: ParsedMatrix): String =
     val rows = (0 until m.rows).map { r =>
-      val cells = (0 until m.cols).map { c => formatCell(getCell(m.data, m.cols, r, c)) }
+      val cells = (0 until m.cols).map(c => formatCell(getCell(m.data, m.cols, r, c)))
       s"(${cells.mkString(",")})"
     }
     s"[${rows.mkString(",")}]"
+  end toAscii
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -147,6 +154,7 @@ object MatrixPage:
                 Icon()("x"),
                 span(s" $msg")
               ): HtmlElement
+            end if
           case (Left(_), _) | (_, Left(_)) =>
             span(): HtmlElement
         }
@@ -168,7 +176,7 @@ object MatrixPage:
       div(
         cls := "calc-detail",
         child <-- selectedCalc.signal.map {
-          case None => span(): HtmlElement
+          case None         => span(): HtmlElement
           case Some(detail) =>
             Card(_.withHeader := true)(
               div(
@@ -273,7 +281,7 @@ object MatrixPage:
 
   private def highlightClass(cell: CellRef): Signal[Seq[String]] =
     hovered.signal.map {
-      case None => Seq.empty
+      case None    => Seq.empty
       case Some(h) =>
         cell.matrix match
           case "A" =>
@@ -281,13 +289,13 @@ object MatrixPage:
               case CellRef("A", r, _) if r == cell.row => Seq("highlight-row")
               case CellRef("A", _, c) if c == cell.col => Seq("highlight-col")
               case CellRef("C", r, _) if r == cell.row => Seq("highlight-row")
-              case _                                    => Seq.empty
+              case _                                   => Seq.empty
           case "B" =>
             h match
               case CellRef("B", r, _) if r == cell.row => Seq("highlight-row")
               case CellRef("B", _, c) if c == cell.col => Seq("highlight-col")
               case CellRef("C", _, c) if c == cell.col => Seq("highlight-col")
-              case _                                    => Seq.empty
+              case _                                   => Seq.empty
           case "C" =>
             h match
               case CellRef("A", r, _) if r == cell.row                  => Seq("highlight-row")
@@ -295,7 +303,7 @@ object MatrixPage:
               case CellRef("C", r, c) if r == cell.row && c == cell.col => Seq("highlight-cell")
               case CellRef("C", r, _) if r == cell.row                  => Seq("highlight-row")
               case CellRef("C", _, c) if c == cell.col                  => Seq("highlight-col")
-              case _                                                     => Seq.empty
+              case _                                                    => Seq.empty
           case _ => Seq.empty
     }
 

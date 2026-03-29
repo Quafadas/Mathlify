@@ -6,9 +6,11 @@ import io.github.nguyenyou.webawesome.laminar.*
 
 enum Page:
   case Home, Expression, Quadratic, Matrix
+end Page
 
 object Router:
   val currentPage: Var[Page] = Var(Page.Home)
+end Router
 
 @main def entryPt(): Unit =
   renderOnDomContentLoaded(

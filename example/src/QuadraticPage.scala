@@ -95,7 +95,7 @@ object QuadraticPage:
       div(
         cls := "solver-steps",
         child <-- solution.map {
-          case None => Callout(_.variant := "warning")("Enter valid coefficients (a \u2260 0)."): HtmlElement
+          case None        => Callout(_.variant := "warning")("Enter valid coefficients (a \u2260 0)."): HtmlElement
           case Some(steps) => renderSteps(steps)
         }
       )
@@ -186,6 +186,7 @@ object QuadraticPage:
         s"x_2 = (${fmt(-b)} - ${fmt(sqrtDisc)})/(${fmt(2 * a)}) = ${fmt(x2)}",
         ""
       )
+    end if
 
     steps.result()
   end solve
