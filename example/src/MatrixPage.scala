@@ -63,6 +63,15 @@ object MatrixPage:
         result += sum
     ParsedMatrix(result.result(), a.rows, b.cols)
 
+  // ── Serialize back to AsciiMath ───────────────────────────────────────────
+
+  private def toAscii(m: ParsedMatrix): String =
+    val rows = (0 until m.rows).map { r =>
+      val cells = (0 until m.cols).map { c => formatCell(getCell(m.data, m.cols, r, c)) }
+      s"(${cells.mkString(",")})"
+    }
+    s"[${rows.mkString(",")}]"
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   private def mathml(ascii: String): HtmlElement =
@@ -148,9 +157,9 @@ object MatrixPage:
         case (Right(c), Right(a), Right(b)) =>
           div(
             cls := "matrix-layout",
-            readOnlyGrid("A", a),
+            editableGrid("A", a, asciiA),
             span(cls := "matrix-op", "×"),
-            readOnlyGrid("B", b),
+            editableGrid("B", b, asciiB),
             span(cls := "matrix-op", "="),
             resultGrid(c, a, b)
           ): HtmlElement
@@ -187,9 +196,9 @@ object MatrixPage:
     )
   end render
 
-  // ── Read-only input grid (hoverable) ──────────────────────────────────────
+  // ── Editable input grid (hoverable, writes back to ascii Var) ─────────────
 
-  private def readOnlyGrid(name: String, m: ParsedMatrix): HtmlElement =
+  private def editableGrid(name: String, m: ParsedMatrix, asciiVar: Var[String]): HtmlElement =
     div(
       cls := "matrix-wrapper",
       span(cls := "matrix-label", name),
@@ -202,10 +211,19 @@ object MatrixPage:
             (0 until m.cols).map { c =>
               val v = getCell(m.data, m.cols, r, c)
               val cellRef = CellRef(name, r, c)
-              div(
-                cls := "matrix-cell",
+              input(
+                cls := "matrix-cell editable-cell",
                 cls <-- highlightClass(cellRef),
-                formatCell(v),
+                typ := "number",
+                defaultValue := formatCell(v),
+                onInput.mapToValue --> { s =>
+                  s.toDoubleOption.foreach { d =>
+                    val idx = r * m.cols + c
+                    val updated = m.copy(data = m.data.updated(idx, d))
+                    asciiVar.set(toAscii(updated))
+                    selectedCalc.set(None)
+                  }
+                },
                 onMouseEnter.mapTo(Some(cellRef)) --> hovered.writer,
                 onMouseLeave.mapTo(None) --> hovered.writer,
                 styleAttr := s"grid-column: ${c + 1}; grid-row: ${r + 1};"

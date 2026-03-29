@@ -20,12 +20,10 @@ jobs:
           java-version: "24"
           distribution: temurin
 
-      - name: Set up Node.js LTS
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
-          cache: npm
-
+          node-version: 22
+      - run: npm install -g terser
       - name: Cache Mill
         uses: actions/cache@v4
         with:
@@ -36,9 +34,9 @@ jobs:
           key: ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-${{ hashFiles('build.mill') }}
           restore-keys: |
             ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-
-            ${{ runner.os }}-mill-      
+            ${{ runner.os }}-mill-
 
-      - name: formatCheck        
+      - name: formatCheck
         run: ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 
       - name: Install npm dependencies (jsdom)
@@ -49,3 +47,12 @@ jobs:
 
       - name: Run tests
         run: ./mill mathlify.test
+
+      - run: ./mill example.publish
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/example/publish.dest
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

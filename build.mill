@@ -1,6 +1,6 @@
 //| mill-version: 1.1.5
 //| mvnDeps:
-//| - io.github.quafadas:sjsls_plugin_mill1_3.8:0.12.17-10-b38691
+//| - io.github.quafadas:sjsls_plugin_mill1_3.8:0.14.0
 
 package build
 
@@ -9,7 +9,8 @@ import mill.api.Task.Simple
 import mill.util.VcsVersion
 
 object V:
-  val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M3"
+  val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M5"
+  val wapypoint: Dep = mvn"com.raquo::wapypoint::10.0.0-M7"
   val jsDom: Dep = mvn"org.scala-js::scalajs-dom::2.2.0"
   val fastparse: Dep = mvn"com.lihaoyi::fastparse::3.1.1"
   val vecxt: Dep = mvn"io.github.quafadas::vecxt::0.0.36"

@@ -1,6 +1,6 @@
 ---
 name: cellar
-description: "Scala/Java code navigation and exploration tool, supporting external queries."
+description: "Scala/Java code navigation and exploration tool for queries on symbols external to this project."
 ---
 
 # Cellar

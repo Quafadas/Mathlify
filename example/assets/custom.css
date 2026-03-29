@@ -303,6 +303,16 @@ wa-divider {
   outline-offset: -1px;
 }
 
+/* Hide number input spinners in matrix cells */
+.matrix-cell::-webkit-outer-spin-button,
+.matrix-cell::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.matrix-cell[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .result-cell {
   font-weight: 600;
   display: flex;
