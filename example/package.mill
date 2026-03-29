@@ -18,7 +18,8 @@ object `package` extends ScalaJsWebAppModule:
   }
 
   def mvnDeps = Seq(
-    build.V.webawesome
+    build.V.webawesome,
+    build.V.waypoint
   )
 
   override def scalaJSImportMap = Seq(

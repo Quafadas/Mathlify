@@ -17,7 +17,7 @@ object HomePage:
         p("Type any AsciiMath expression and watch it render live. Bind variables and evaluate — a mathematical playground."),
         Button()(
           "Open Explorer",
-          onClick.mapTo(Page.Expression) --> Router.currentPage.writer
+          onClick --> (_ => router.pushState(Page.Expression))
         )
       ),
       Card(_.withHeader := true)(
@@ -30,7 +30,7 @@ object HomePage:
         p("A step-by-step proof of the quadratic formula by completing the square — then solve your own equations interactively."),
         Button()(
           "Explore Proof",
-          onClick.mapTo(Page.Quadratic) --> Router.currentPage.writer
+          onClick --> (_ => router.pushState(Page.Quadratic))
         )
       ),
       Card(_.withHeader := true)(
@@ -43,7 +43,7 @@ object HomePage:
         p("See how matrix multiplication works cell by cell. Hover to highlight rows and columns, click output cells to reveal the dot-product calculation."),
         Button()(
           "Try It",
-          onClick.mapTo(Page.Matrix) --> Router.currentPage.writer
+          onClick --> (_ => router.pushState(Page.Matrix))
         )
       )
     )

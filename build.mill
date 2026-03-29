@@ -10,7 +10,7 @@ import mill.util.VcsVersion
 
 object V:
   val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M5"
-  val wapypoint: Dep = mvn"com.raquo::wapypoint::10.0.0-M7"
+  val waypoint: Dep = mvn"com.raquo::waypoint::10.0.0-M7"
   val jsDom: Dep = mvn"org.scala-js::scalajs-dom::2.2.0"
   val fastparse: Dep = mvn"com.lihaoyi::fastparse::3.1.1"
   val vecxt: Dep = mvn"io.github.quafadas::vecxt::0.0.36"
