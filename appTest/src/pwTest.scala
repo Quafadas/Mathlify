@@ -31,28 +31,32 @@ trait PlaywrightTestBase extends munit.FunSuite:
     val port = server.getAddress.getPort
     baseUrl = s"http://localhost:$port"
 
-    server.createContext("/", (exchange: HttpExchange) => {
-      val requestPath = exchange.getRequestURI.getPath.stripPrefix("/")
-      val filePath = if requestPath.isEmpty then "index.html" else requestPath
-      val resolved = publishDir.resolve(filePath).normalize()
+    server.createContext(
+      "/",
+      (exchange: HttpExchange) =>
+        val requestPath = exchange.getRequestURI.getPath.stripPrefix("/")
+        val filePath = if requestPath.isEmpty then "index.html" else requestPath
+        val resolved = publishDir.resolve(filePath).normalize()
 
-      if !resolved.startsWith(publishDir) then
-        exchange.sendResponseHeaders(403, -1)
-        exchange.close()
-      else if Files.exists(resolved) && !Files.isDirectory(resolved) then
-        val bytes = Files.readAllBytes(resolved)
-        val ext = filePath.split('.').lastOption.getOrElse("")
-        val ct = contentTypes.getOrElse(ext, "application/octet-stream")
-        exchange.getResponseHeaders.add("Content-Type", ct)
-        exchange.sendResponseHeaders(200, bytes.length.toLong)
-        exchange.getResponseBody.write(bytes)
-        exchange.getResponseBody.close()
-      else
-        exchange.sendResponseHeaders(404, -1)
-        exchange.close()
-    })
+        if !resolved.startsWith(publishDir) then
+          exchange.sendResponseHeaders(403, -1)
+          exchange.close()
+        else if Files.exists(resolved) && !Files.isDirectory(resolved) then
+          val bytes = Files.readAllBytes(resolved)
+          val ext = filePath.split('.').lastOption.getOrElse("")
+          val ct = contentTypes.getOrElse(ext, "application/octet-stream")
+          exchange.getResponseHeaders.add("Content-Type", ct)
+          exchange.sendResponseHeaders(200, bytes.length.toLong)
+          exchange.getResponseBody.write(bytes)
+          exchange.getResponseBody.close()
+        else
+          exchange.sendResponseHeaders(404, -1)
+          exchange.close()
+        end if
+    )
     server.start()
   end startServer
 
   protected def stopServer(): Unit =
     if server != null then server.stop(0)
+end PlaywrightTestBase

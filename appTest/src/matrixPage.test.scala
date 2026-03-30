@@ -14,8 +14,11 @@ class MatrixPageTest extends PlaywrightTestBase:
 
   override def afterAll(): Unit =
     if page != null then page.close()
+    end if
     if browser != null then browser.close()
+    end if
     if pw != null then pw.close()
+    end if
     stopServer()
   end afterAll
 
@@ -24,3 +27,4 @@ class MatrixPageTest extends PlaywrightTestBase:
     val title = page.title()
     assert(title.nonEmpty, s"Expected a non-empty page title, got: '$title'")
   }
+end MatrixPageTest
