@@ -1,0 +1,38 @@
+package build.appTest
+
+import mill.*, scalalib.*, scalajslib.*
+
+import mill.contrib.buildinfo.BuildInfo
+
+object `package` extends ScalaModule with TestModule.Munit with BuildInfo:
+  def scalaVersion = build.V.scalaVersion
+  def testFramework = "munit.Framework"
+  override def defaultTask(): String = "testForked"
+
+  val buildInfoPackageName = "mathlify"
+
+  override def buildInfoMembers = Task {
+      Seq(
+      BuildInfo.Value("publishDir", build.example.publish().path.toString),
+    )
+  }
+
+  /**
+   * Introduce a dependancy on publish, so that we are testing the published version.
+   */
+  override def forkEnv = Task{
+    val env = super.forkEnv()
+    build.example.publish()
+    // Map(
+    //   "PLAYWRIGHT_BROWSERS_PATH" -> "0",
+    //   "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" -> "1"
+    // )
+    env
+  }
+
+
+  def mvnDeps = Seq(
+    mvn"org.scalameta::munit::1.2.4",
+    mvn"com.microsoft.playwright:playwright:${build.V.playwrightVersion}",
+    mvn"com.microsoft.playwright:driver-bundle:${build.V.playwrightVersion}"
+  )
