@@ -17,18 +17,7 @@ object `package` extends ScalaModule with TestModule.Munit with BuildInfo:
     )
   }
 
-  /**
-   * Introduce a dependancy on publish, so that we are testing the published version.
-   */
-  override def forkEnv = Task{
-    val env = super.forkEnv()
-    build.example.publish()
-    // Map(
-    //   "PLAYWRIGHT_BROWSERS_PATH" -> "0",
-    //   "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" -> "1"
-    // )
-    env
-  }
+
 
 
   def mvnDeps = Seq(
