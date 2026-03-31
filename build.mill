@@ -8,6 +8,8 @@ import mill.*, scalalib.*, publish.*
 import mill.api.Task.Simple
 import mill.util.VcsVersion
 
+// mill mill.scalalib.scalafmt.ScalafmtModule/
+
 object V:
   val laminar: Dep = mvn"com.raquo::laminar::18.0.0-M5"
   val waypoint: Dep = mvn"com.raquo::waypoint::10.0.0-M7"

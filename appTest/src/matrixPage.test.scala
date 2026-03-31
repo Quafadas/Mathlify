@@ -14,13 +14,18 @@ class MatrixPageTest extends PlaywrightTestBase:
 
   override def afterAll(): Unit =
     if page != null then page.close()
+    end if
     if browser != null then browser.close()
+    end if
     if pw != null then pw.close()
+    end if
     stopServer()
   end afterAll
 
   test("home page loads") {
-    page.navigate(baseUrl)
-    val title = page.title()
-    assert(title.nonEmpty, s"Expected a non-empty page title, got: '$title'")
+    val response = page.navigate(baseUrl)
+    assert(response.ok(), s"Expected 200, got ${response.status()}")
+    page.waitForSelector("#app")
+    assert(page.querySelector("#app") != null, "Expected #app element to exist")
   }
+end MatrixPageTest

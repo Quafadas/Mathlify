@@ -12,16 +12,14 @@ object `package` extends ScalaModule with TestModule.Munit with BuildInfo:
   val buildInfoPackageName = "mathlify"
 
   override def buildInfoMembers = Task {
-      Seq(
-      BuildInfo.Value("publishDir", build.example.publish().path.toString),
+    Seq(
+      BuildInfo.Value("publishDir", build.example.publish().path.toString)
     )
   }
-
-
-
 
   def mvnDeps = Seq(
     mvn"org.scalameta::munit::1.2.4",
     mvn"com.microsoft.playwright:playwright:${build.V.playwrightVersion}",
     mvn"com.microsoft.playwright:driver-bundle:${build.V.playwrightVersion}"
   )
+end `package`
