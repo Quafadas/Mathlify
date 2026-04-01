@@ -73,7 +73,7 @@ jobs:
         run: ./mill mathlify.test
 
       - name: Run tests
-        run: ./mill example.appTest
+        run: ./mill appTest
       - run: ./mill example.publish
 
       - uses: actions/upload-pages-artifact@v3
