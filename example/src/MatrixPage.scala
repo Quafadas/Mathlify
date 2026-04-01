@@ -225,7 +225,9 @@ object MatrixPage:
       // React to external URL changes (e.g. browser back/forward)
       pageSignal.changes --> { page =>
         if page.a != asciiA.now() then asciiA.set(page.a)
+        end if
         if page.b != asciiB.now() then asciiB.set(page.b)
+        end if
       }
     )
   end render

@@ -82,6 +82,4 @@ class MatrixPageTest extends PlaywrightTestBase:
     assert(page.locator("wa-callout").last().textContent().contains("Dimension mismatch: A is 2×3 but B is 2×2"))
   }
 
-
-
 end MatrixPageTest

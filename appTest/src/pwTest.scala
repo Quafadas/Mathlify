@@ -40,6 +40,7 @@ trait PlaywrightTestBase extends munit.FunSuite:
     browser = pw.chromium().launch(options)
     page = browser.newPage()
     page.setDefaultTimeout(10000)
+  end beforeEach
 
   protected def startServer(): Unit =
     val publishDir = Path.of(BuildInfo.publishDir)

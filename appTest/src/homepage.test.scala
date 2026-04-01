@@ -8,3 +8,4 @@ class HomePageTest extends PlaywrightTestBase:
     page.waitForSelector("#app")
     assert(page.querySelector("#app") != null, "Expected #app element to exist")
   }
+end HomePageTest

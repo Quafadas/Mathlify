@@ -13,6 +13,7 @@ object Page:
   case class Matrix(a: String, b: String) extends Page
   object Matrix:
     val default: Matrix = Matrix("[(1,2,3),(4,5,6), (7,8,9)]", "[(7,8),(9,10),(11,12)]")
+  end Matrix
 end Page
 
 val homeRoute = Route.static(Page.Home, root / "home", basePath = Route.fragmentBasePath)
@@ -35,26 +36,27 @@ object router
     extends Router[Page](
       routes = List(homeRoute, expressionRoute, quadraticRoute, matrixRoute),
       serializePage = {
-        case Page.Home       => "Home"
-        case Page.Expression => "Expression"
-        case Page.Quadratic  => "Quadratic"
+        case Page.Home         => "Home"
+        case Page.Expression   => "Expression"
+        case Page.Quadratic    => "Quadratic"
         case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
       },
       deserializePage = {
-        case "Home"       => Page.Home
-        case "Expression" => Page.Expression
-        case "Quadratic"  => Page.Quadratic
+        case "Home"                            => Page.Home
+        case "Expression"                      => Page.Expression
+        case "Quadratic"                       => Page.Quadratic
         case s if s.startsWith("Matrix\u0000") =>
           val rest = s.stripPrefix("Matrix\u0000")
-          val sep  = rest.indexOf('\u0000')
+          val sep = rest.indexOf('\u0000')
           if sep >= 0 then Page.Matrix(rest.substring(0, sep), rest.substring(sep + 1))
           else Page.Matrix.default
+          end if
       },
       getPageTitle = {
         case Page.Home       => "Mathlify"
         case Page.Expression => "Expression Explorer – Mathlify"
         case Page.Quadratic  => "Quadratic Formula – Mathlify"
-        case _: Page.Matrix => "Matrix Multiplication – Mathlify"
+        case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
       },
       routeFallback = _ => Page.Home
     )
@@ -70,7 +72,7 @@ def app =
     .collectStatic(Page.Home)(HomePage.render())
     .collectStatic(Page.Expression)(ExpressionPage.render())
     .collectStatic(Page.Quadratic)(QuadraticPage.render())
-    .collectSignal[Page.Matrix] { sig => MatrixPage.render(sig) }
+    .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))
 
   div(
     cls := "page-container",
