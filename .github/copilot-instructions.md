@@ -5,17 +5,19 @@
 Mill build tool.
 
 - Build: A cold build can take up to 1 minute. Stay patient. Subsequent builds will be faster - incremental compilation and caching will speed things up.
-- Test: ./mill test
 - Format: ./mill mill.scalalib.scalafmt.ScalafmtModule/
 - Explore: ./mill resolve _
 
-When developing the example project, run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_. Once running, it will reload on change. You can view the example app at http://localhost:8080 (for example using the playwright skilll). If you need to access the server logs, you'll have to kill the existing one and restart it so that you have the context
+When developing the example project,
+1. run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_. Once running, it will reload on change.
+2. Use the playwright skill to example app (it'll change quickly) at http://localhost:8080
+3. explicitly kill the server process by terminating the process running in the server port, e.g. `lsof -i :8080` to find the process and `kill -9 <pid>` to kill it.
 
-Always format before committing - CI will fail without correct formatting.
+Format before committing - CI will fail without correct formatting.
 
-Always write tests for your changes. Ask for guidance if unsure how to test. For the example app write playwright tests in order to test the user experience.
+_Always_ write tests for your changes. Ask for guidance if unsure how to test. For the example app write playwright to test the user experience.
 
-For navigation and symbol information use scalex (see skill) or the metals MCP depending on the level of information needed.
+For navigation and symbol information use scalex (for this repository). Cellar (for queries to external dependancies) or the metals MCP depending on the level of information needed.
 
 ## Folder Structure:
 
