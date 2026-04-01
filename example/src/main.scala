@@ -17,12 +17,13 @@ object Page:
 end Page
 
 // Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
-lazy val appBasePath: String = {
+lazy val appBasePath: String =
   val path = dom.document.location.pathname
-  val dir  = if path.endsWith("/") then path.dropRight(1)
-             else path.substring(0, path.lastIndexOf('/'))
+  val dir =
+    if path.endsWith("/") then path.dropRight(1)
+    else path.substring(0, path.lastIndexOf('/'))
   dir + "/#"
-}
+end appBasePath
 
 val homeRoute = Route.static(Page.Home, root / "home", basePath = appBasePath)
 val expressionRoute =
