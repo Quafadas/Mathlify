@@ -12,7 +12,7 @@ object Page:
   case object Quadratic extends Page
   case class Matrix(a: String, b: String) extends Page
   object Matrix:
-    val default: Matrix = Matrix("[(1,2,3),(4,5,6)]", "[(7,8),(9,10),(11,12)]")
+    val default: Matrix = Matrix("[(1,2,3),(4,5,6), (7,8,9)]", "[(7,8),(9,10),(11,12)]")
 end Page
 
 val homeRoute = Route.static(Page.Home, root / "home", basePath = Route.fragmentBasePath)
