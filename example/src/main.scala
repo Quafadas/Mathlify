@@ -16,11 +16,19 @@ object Page:
   end Matrix
 end Page
 
-val homeRoute = Route.static(Page.Home, root / "home", basePath = Route.fragmentBasePath)
+// Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
+lazy val appBasePath: String = {
+  val path = dom.document.location.pathname
+  val dir  = if path.endsWith("/") then path.dropRight(1)
+             else path.substring(0, path.lastIndexOf('/'))
+  dir + "/#"
+}
+
+val homeRoute = Route.static(Page.Home, root / "home", basePath = appBasePath)
 val expressionRoute =
-  Route.static(Page.Expression, root / "expression", basePath = Route.fragmentBasePath)
+  Route.static(Page.Expression, root / "expression", basePath = appBasePath)
 val quadraticRoute =
-  Route.static(Page.Quadratic, root / "quadratic", basePath = Route.fragmentBasePath)
+  Route.static(Page.Quadratic, root / "quadratic", basePath = appBasePath)
 val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])](
   encode = page => (Some(page.a), Some(page.b)),
   decode = args =>
@@ -29,7 +37,7 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
       b = args._2.getOrElse(Page.Matrix.default.b)
     ),
   pattern = (root / "matrix") ? (param[String]("a").? & param[String]("b").?),
-  basePath = Route.fragmentBasePath
+  basePath = appBasePath
 )
 
 object router
