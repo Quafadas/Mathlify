@@ -7,6 +7,7 @@ package build
 import mill.*, scalalib.*, publish.*
 import mill.api.Task.Simple
 import mill.util.VcsVersion
+import mill.util.Jvm
 
 // mill mill.scalalib.scalafmt.ScalafmtModule/
 
@@ -20,8 +21,18 @@ object V:
   val scalaJSVersion = "1.20.2"
   val munitVersion = "1.1.1"
   val webawesome = mvn"io.github.nguyenyou::webawesome-laminar::3.0.0"
-  val playwrightVersion = "1.58.0"
+  val playwrightVersion = build.pwV
 end V
+
+object PlaywrightSetup extends JavaModule:
+
+  def mvnDeps = Seq(
+    mvn"com.microsoft.playwright:playwright:${build.V.playwrightVersion}",
+    mvn"com.microsoft.playwright:driver-bundle:${build.V.playwrightVersion}"
+  )
+
+  def mainClass = Some("com.microsoft.playwright.CLI")
+end PlaywrightSetup
 
 trait MathlifyPublishModule extends PublishModule, ScalaModule:
   def scalaVersion: Simple[String] = build.V.scalaVersion
