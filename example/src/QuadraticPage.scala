@@ -93,10 +93,17 @@ object QuadraticPage:
         }
       ),
       div(
-        cls := "solver-steps",
         child <-- solution.map {
-          case None        => Callout(_.variant := "warning")("Enter valid coefficients (a \u2260 0)."): HtmlElement
-          case Some(steps) => renderSteps(steps)
+          case None         => Callout(_.variant := "warning")("Enter valid coefficients (a \u2260 0)."): HtmlElement
+          case Some(result) =>
+            div(
+              Callout(_.variant := "success")(
+                cls := "answer-callout",
+                strong("Answer: "),
+                div(cls := "rendered-math", mathml(result.answer))
+              ),
+              div(cls := "solver-steps", renderSteps(result.steps))
+            )
         }
       )
     )
@@ -115,12 +122,13 @@ object QuadraticPage:
   // ── Solver logic ──────────────────────────────────────────────────────────
 
   case class SolveStep(title: String, ascii: String, note: String)
+  case class SolveResult(answer: String, steps: List[SolveStep])
 
   private def fmt(d: Double): String =
     if d == d.toLong.toDouble then d.toLong.toString
     else f"$d%.4g"
 
-  private def solve(a: Double, b: Double, c: Double): List[SolveStep] =
+  private def solve(a: Double, b: Double, c: Double): SolveResult =
     val disc = b * b - 4 * a * c
     val steps = List.newBuilder[SolveStep]
 
@@ -142,53 +150,56 @@ object QuadraticPage:
       ""
     )
 
-    if disc < 0 then
-      steps += SolveStep(
-        "Discriminant is negative",
-        s"Delta = ${fmt(disc)} < 0",
-        "No real solutions — the roots are complex."
-      )
-      val real = -b / (2 * a)
-      val imag = math.sqrt(-disc) / (2 * a)
-      steps += SolveStep(
-        "Complex roots",
-        s"x = ${fmt(real)} +- ${fmt(imag)}i",
-        ""
-      )
-    else if disc == 0 then
-      val x = -b / (2 * a)
-      steps += SolveStep(
-        "Discriminant is zero — one repeated root",
-        s"x = -b/(2a) = ${fmt(-b)}/(2 * ${fmt(a)}) = ${fmt(x)}",
-        ""
-      )
-    else
-      val sqrtDisc = math.sqrt(disc)
-      steps += SolveStep(
-        "Take the square root of the discriminant",
-        s"sqrt(Delta) = sqrt(${fmt(disc)}) = ${fmt(sqrtDisc)}",
-        ""
-      )
-      val x1 = (-b + sqrtDisc) / (2 * a)
-      val x2 = (-b - sqrtDisc) / (2 * a)
-      steps += SolveStep(
-        "Apply the quadratic formula",
-        s"x = (-b +- sqrt(Delta))/(2a)",
-        ""
-      )
-      steps += SolveStep(
-        "First root",
-        s"x_1 = (${fmt(-b)} + ${fmt(sqrtDisc)})/(${fmt(2 * a)}) = ${fmt(x1)}",
-        ""
-      )
-      steps += SolveStep(
-        "Second root",
-        s"x_2 = (${fmt(-b)} - ${fmt(sqrtDisc)})/(${fmt(2 * a)}) = ${fmt(x2)}",
-        ""
-      )
-    end if
+    val answer: String =
+      if disc < 0 then
+        steps += SolveStep(
+          "Discriminant is negative",
+          s"Delta = ${fmt(disc)} < 0",
+          "No real solutions — the roots are complex."
+        )
+        val real = -b / (2 * a)
+        val imag = math.sqrt(-disc) / (2 * a)
+        steps += SolveStep(
+          "Complex roots",
+          s"x = ${fmt(real)} +- ${fmt(imag)}i",
+          ""
+        )
+        s"x = ${fmt(real)} +- ${fmt(imag)}i"
+      else if disc == 0 then
+        val x = -b / (2 * a)
+        steps += SolveStep(
+          "Discriminant is zero — one repeated root",
+          s"x = -b/(2a) = ${fmt(-b)}/(2 * ${fmt(a)}) = ${fmt(x)}",
+          ""
+        )
+        s"x = ${fmt(x)}"
+      else
+        val sqrtDisc = math.sqrt(disc)
+        steps += SolveStep(
+          "Take the square root of the discriminant",
+          s"sqrt(Delta) = sqrt(${fmt(disc)}) = ${fmt(sqrtDisc)}",
+          ""
+        )
+        val x1 = (-b + sqrtDisc) / (2 * a)
+        val x2 = (-b - sqrtDisc) / (2 * a)
+        steps += SolveStep(
+          "Apply the quadratic formula",
+          s"x = (-b +- sqrt(Delta))/(2a)",
+          ""
+        )
+        steps += SolveStep(
+          "First root",
+          s"x_1 = (${fmt(-b)} + ${fmt(sqrtDisc)})/(${fmt(2 * a)}) = ${fmt(x1)}",
+          ""
+        )
+        steps += SolveStep(
+          "Second root",
+          s"x_2 = (${fmt(-b)} - ${fmt(sqrtDisc)})/(${fmt(2 * a)}) = ${fmt(x2)}",
+          ""
+        )
+        s"x_1 = ${fmt(x1)}, \\ x_2 = ${fmt(x2)}"
 
-    steps.result()
+    SolveResult(answer, steps.result())
   end solve
 
   private def renderSteps(steps: List[SolveStep]): HtmlElement =
