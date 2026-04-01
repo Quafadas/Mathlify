@@ -45,6 +45,21 @@ jobs:
             ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-
             ${{ runner.os }}-mill-
 
+
+      - name: Cache Playwright dependencies
+        id: cache-pw
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('playwrightVersion.mill') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+
+      - name: Install Playwright
+        if: steps.cache-pw.outputs.cache-hit != 'true'
+        run: ./mill PlaywrightSetup install --with-deps
+
       - name: formatCheck
         run: ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 
@@ -57,11 +72,13 @@ jobs:
       - name: Run tests
         run: ./mill mathlify.test
 
-      - run: ./mill example.publish
+      - name: Run tests
+        run: ./mill appTest
+      - run: ./mill example.assembleSite
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: out/example/publish.dest
+          path: out/example/assembleSite.dest
 
       - id: deployment
         uses: actions/deploy-pages@v4

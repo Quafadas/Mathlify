@@ -13,10 +13,10 @@ object MatrixPage:
 
   // ── State ─────────────────────────────────────────────────────────────────
   private val hovered: Var[Option[CellRef]] = Var(None)
-  private val selectedCalc: Var[Option[CalcDetail]] = Var(None)
+  private val selectedCell: Var[Option[(Int, Int)]] = Var(None)
 
-  private val asciiA: Var[String] = Var("[(1,2,3),(4,5,6)]")
-  private val asciiB: Var[String] = Var("[(7,8),(9,10),(11,12)]")
+  private val asciiA: Var[String] = Var(Page.Matrix.default.a)
+  private val asciiB: Var[String] = Var(Page.Matrix.default.b)
 
   // ── Parsing ───────────────────────────────────────────────────────────────
 
@@ -86,9 +86,16 @@ object MatrixPage:
       case Right(expr) => mathlify.LaminarRenderer.render(expr)
       case Left(_)     => span(ascii)
 
-  def render(): HtmlElement =
-    selectedCalc.set(None)
+  def render(pageSignal: Signal[Page.Matrix]): HtmlElement =
+    selectedCell.set(None)
     hovered.set(None)
+
+    // Initialise vars from current URL query params
+    val currentPage = router.currentPageSignal.now() match
+      case p: Page.Matrix => p
+      case _              => Page.Matrix.default
+    asciiA.set(currentPage.a)
+    asciiB.set(currentPage.b)
 
     val parsedA = asciiA.signal.map(parseMatrix)
     val parsedB = asciiB.signal.map(parseMatrix)
@@ -99,6 +106,16 @@ object MatrixPage:
       case (Left(e), _)                             => Left(s"Matrix A: $e")
       case (_, Left(e))                             => Left(s"Matrix B: $e")
     }
+
+    val activeDetailSignal: Signal[Option[CalcDetail]] =
+      selectedCell.signal.combineWith(parsedA, parsedB).map {
+        case (Some((r, col)), Right(a), Right(b)) if r < a.rows && col < b.cols =>
+          val c = multiply(a, b)
+          val v = getCell(c.data, c.cols, r, col)
+          val terms = (0 until a.cols).map(k => (getCell(a.data, a.cols, r, k), getCell(b.data, b.cols, k, col))).toList
+          Some(CalcDetail(r, col, terms, v))
+        case _ => None
+      }
 
     div(
       cls := "matrix-page",
@@ -175,7 +192,7 @@ object MatrixPage:
       },
       div(
         cls := "calc-detail",
-        child <-- selectedCalc.signal.map {
+        child <-- activeDetailSignal.map {
           case None         => span(): HtmlElement
           case Some(detail) =>
             Card(_.withHeader := true)(
@@ -190,17 +207,28 @@ object MatrixPage:
                   span(
                     cls := "calc-term",
                     if k > 0 then " + " else "",
-                    span(cls := "calc-a", f"$aVal%.4g"),
+                    span(cls := "calc-a", formatCell(aVal)),
                     " × ",
-                    span(cls := "calc-b", f"$bVal%.4g")
+                    span(cls := "calc-b", formatCell(bVal))
                   )
                 },
                 span(cls := "calc-eq", s" = "),
-                span(cls := "calc-result", f"${detail.result}%.4g")
+                span(cls := "calc-result", formatCell(detail.result))
               )
             ): HtmlElement
         }
-      )
+      ),
+      // Push URL query params whenever inputs change
+      asciiA.signal.combineWith(asciiB.signal).changes --> { (a, b) =>
+        router.replaceState(Page.Matrix(a, b))
+      },
+      // React to external URL changes (e.g. browser back/forward)
+      pageSignal.changes --> { page =>
+        if page.a != asciiA.now() then asciiA.set(page.a)
+        end if
+        if page.b != asciiB.now() then asciiB.set(page.b)
+        end if
+      }
     )
   end render
 
@@ -229,7 +257,6 @@ object MatrixPage:
                     val idx = r * m.cols + c
                     val updated = m.copy(data = m.data.updated(idx, d))
                     asciiVar.set(toAscii(updated))
-                    selectedCalc.set(None)
                   }
                 },
                 onMouseEnter.mapTo(Some(cellRef)) --> hovered.writer,
@@ -264,10 +291,7 @@ object MatrixPage:
                 onMouseEnter.mapTo(Some(cellRef)) --> hovered.writer,
                 onMouseLeave.mapTo(None) --> hovered.writer,
                 onClick --> { _ =>
-                  val terms = (0 until a.cols).map { k =>
-                    (getCell(a.data, a.cols, r, k), getCell(b.data, b.cols, k, col))
-                  }.toList
-                  selectedCalc.set(Some(CalcDetail(r, col, terms, v)))
+                  selectedCell.set(Some((r, col)))
                 },
                 styleAttr := s"grid-column: ${col + 1}; grid-row: ${r + 1}; cursor: pointer;"
               )

@@ -5,17 +5,19 @@
 Mill build tool.
 
 - Build: A cold build can take up to 1 minute. Stay patient. Subsequent builds will be faster - incremental compilation and caching will speed things up.
-- Test: ./mill test
 - Format: ./mill mill.scalalib.scalafmt.ScalafmtModule/
 - Explore: ./mill resolve _
 
-When developing the example project, run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_ and other commands to it will fail, because it's on the port.
+When developing the example project,
+1. run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_. Once running, it will reload on change.
+2. Use the playwright skill to example app (it'll change quickly) at http://localhost:8080
+3. explicitly kill the server process by terminating the process running in the server port, e.g. `lsof -i :8080` to find the process and `kill -9 <pid>` to kill it.
 
-If you need access to it's logs, you'll have to kill the existing one and restart it.
+Format before committing - CI will fail without correct formatting.
 
-Always format before committing - CI will fail without correct formatting.
+_Always_ write tests for your changes. Ask for guidance if unsure how to test. For the example app write playwright to test the user experience.
 
-For navigation and symbol information use scalex (see skill) or the metals MCP depending on the level of information needed.
+For navigation and symbol information use scalex (for this repository). Cellar (for queries to external dependancies) or the metals MCP depending on the level of information needed.
 
 ## Folder Structure:
 
@@ -30,7 +32,11 @@ For navigation and symbol information use scalex (see skill) or the metals MCP d
 
 The primary form of validation is via unit testing. Mathlify should ensure that the elements it emits can be found in the dom.
 
-Tests are writting using scala munit, see the folder structure for locations.
+For the example app you shoudl write and execute playwright tests in the appTest folder. e.g. `mill appTest.testForked`. These tests are written using the java playwrtight SDK. They start up a simple file server to serve the example app, then use Playwright to drive a headless browser to interact with the app and validate the behavior. The tests can be found in the appTest/src folder.
+
+Test framework is scala munit, see the folder structure for locations
+
+Try to stay inside the java ecosystem, instead of turning to python use java 21s simple webserver, e.g. `jwebserver -d . /Users/simon/Code/Mathlify/out/example/publish.dest` to serve files for testing.
 
 ## CI
 

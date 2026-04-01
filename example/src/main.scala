@@ -10,37 +10,62 @@ object Page:
   case object Home extends Page
   case object Expression extends Page
   case object Quadratic extends Page
-  case object Matrix extends Page
+  case class Matrix(a: String, b: String) extends Page
+  object Matrix:
+    val default: Matrix = Matrix("[(1,2,3),(4,5,6)]", "[(7,8),(9,10),(11,12)]")
+  end Matrix
 end Page
 
-val homeRoute = Route.static(Page.Home, root / "home", basePath = Route.fragmentBasePath)
+// Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
+lazy val appBasePath: String =
+  val path = dom.document.location.pathname
+  val dir =
+    if path.endsWith("/") then path.dropRight(1)
+    else path.substring(0, path.lastIndexOf('/'))
+  dir + "/#"
+end appBasePath
+
+val homeRoute = Route.static(Page.Home, root / "home", basePath = appBasePath)
 val expressionRoute =
-  Route.static(Page.Expression, root / "expression", basePath = Route.fragmentBasePath)
+  Route.static(Page.Expression, root / "expression", basePath = appBasePath)
 val quadraticRoute =
-  Route.static(Page.Quadratic, root / "quadratic", basePath = Route.fragmentBasePath)
-val matrixRoute =
-  Route.static(Page.Matrix, root / "matrix", basePath = Route.fragmentBasePath)
+  Route.static(Page.Quadratic, root / "quadratic", basePath = appBasePath)
+val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])](
+  encode = page => (Some(page.a), Some(page.b)),
+  decode = args =>
+    Page.Matrix(
+      a = args._1.getOrElse(Page.Matrix.default.a),
+      b = args._2.getOrElse(Page.Matrix.default.b)
+    ),
+  pattern = (root / "matrix") ? (param[String]("a").? & param[String]("b").?),
+  basePath = appBasePath
+)
 
 object router
     extends Router[Page](
       routes = List(homeRoute, expressionRoute, quadraticRoute, matrixRoute),
       serializePage = {
-        case Page.Home       => "Home"
-        case Page.Expression => "Expression"
-        case Page.Quadratic  => "Quadratic"
-        case Page.Matrix     => "Matrix"
+        case Page.Home         => "Home"
+        case Page.Expression   => "Expression"
+        case Page.Quadratic    => "Quadratic"
+        case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
       },
       deserializePage = {
-        case "Home"       => Page.Home
-        case "Expression" => Page.Expression
-        case "Quadratic"  => Page.Quadratic
-        case "Matrix"     => Page.Matrix
+        case "Home"                            => Page.Home
+        case "Expression"                      => Page.Expression
+        case "Quadratic"                       => Page.Quadratic
+        case s if s.startsWith("Matrix\u0000") =>
+          val rest = s.stripPrefix("Matrix\u0000")
+          val sep = rest.indexOf('\u0000')
+          if sep >= 0 then Page.Matrix(rest.substring(0, sep), rest.substring(sep + 1))
+          else Page.Matrix.default
+          end if
       },
       getPageTitle = {
         case Page.Home       => "Mathlify"
         case Page.Expression => "Expression Explorer – Mathlify"
         case Page.Quadratic  => "Quadratic Formula – Mathlify"
-        case Page.Matrix     => "Matrix Multiplication – Mathlify"
+        case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
       },
       routeFallback = _ => Page.Home
     )
@@ -56,7 +81,7 @@ def app =
     .collectStatic(Page.Home)(HomePage.render())
     .collectStatic(Page.Expression)(ExpressionPage.render())
     .collectStatic(Page.Quadratic)(QuadraticPage.render())
-    .collectStatic(Page.Matrix)(MatrixPage.render())
+    .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))
 
   div(
     cls := "page-container",
@@ -68,7 +93,7 @@ def app =
         Icon()("calculator", cls := "header-icon"),
         h1("Mathlify")
       ),
-      p(cls := "subtitle", "An educational library of fun maths")
+      p(cls := "subtitle", "A library of fun maths")
     ),
     child <-- splitter.signal
   )

@@ -1,7 +1,7 @@
 package mathlify
 
 import com.microsoft.playwright.*
-import com.sun.net.httpserver.{HttpServer, HttpExchange}
+import com.sun.net.httpserver.{SimpleFileServer, HttpServer}
 import java.net.InetSocketAddress
 import java.nio.file.{Files, Path}
 import scala.compiletime.uninitialized
@@ -18,42 +18,36 @@ trait PlaywrightTestBase extends munit.FunSuite:
     .setHeadless(true)
     .setArgs(List("--no-sandbox").asJava)
 
-  private val contentTypes = Map(
-    "html" -> "text/html",
-    "js" -> "application/javascript",
-    "css" -> "text/css",
-    "map" -> "application/json"
-  )
+  override def beforeAll(): Unit =
+    startServer()
+    pw = Playwright.create()
+  end beforeAll
+
+  override def afterAll(): Unit =
+    if pw != null then pw.close()
+    end if
+    stopServer()
+  end afterAll
+
+  override def afterEach(context: AfterEach): Unit =
+    if page != null then page.close()
+    end if
+    if browser != null then browser.close()
+    end if
+  end afterEach
+
+  override def beforeEach(context: BeforeEach): Unit =
+    browser = pw.chromium().launch(options)
+    page = browser.newPage()
+    page.setDefaultTimeout(10000)
+  end beforeEach
 
   protected def startServer(): Unit =
     val publishDir = Path.of(BuildInfo.publishDir)
-    server = HttpServer.create(InetSocketAddress(0), 0)
+    val server = SimpleFileServer.createFileServer(InetSocketAddress(0), publishDir, SimpleFileServer.OutputLevel.NONE)
     val port = server.getAddress.getPort
     baseUrl = s"http://localhost:$port"
-
-    server.createContext(
-      "/",
-      (exchange: HttpExchange) =>
-        val requestPath = exchange.getRequestURI.getPath.stripPrefix("/")
-        val filePath = if requestPath.isEmpty then "index.html" else requestPath
-        val resolved = publishDir.resolve(filePath).normalize()
-
-        if !resolved.startsWith(publishDir) then
-          exchange.sendResponseHeaders(403, -1)
-          exchange.close()
-        else if Files.exists(resolved) && !Files.isDirectory(resolved) then
-          val bytes = Files.readAllBytes(resolved)
-          val ext = filePath.split('.').lastOption.getOrElse("")
-          val ct = contentTypes.getOrElse(ext, "application/octet-stream")
-          exchange.getResponseHeaders.add("Content-Type", ct)
-          exchange.sendResponseHeaders(200, bytes.length.toLong)
-          exchange.getResponseBody.write(bytes)
-          exchange.getResponseBody.close()
-        else
-          exchange.sendResponseHeaders(404, -1)
-          exchange.close()
-        end if
-    )
+    println(s"Starting server at $baseUrl serving from $publishDir")
     server.start()
   end startServer
 

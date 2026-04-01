@@ -12,8 +12,10 @@ object `package` extends ScalaModule with TestModule.Munit with BuildInfo:
   val buildInfoPackageName = "mathlify"
 
   override def buildInfoMembers = Task {
+    val published = build.example.assembleSite()
+    Task.log.info(s"Published example site to ${published.path}")
     Seq(
-      BuildInfo.Value("publishDir", build.example.publish().path.toString)
+      BuildInfo.Value("publishDir", published.path.toString)
     )
   }
 
