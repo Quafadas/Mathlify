@@ -9,11 +9,11 @@ Mill build tool.
 - Format: ./mill mill.scalalib.scalafmt.ScalafmtModule/
 - Explore: ./mill resolve _
 
-When developing the example project, run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_ and other commands to it will fail, because it's on the port.
-
-If you need access to it's logs, you'll have to kill the existing one and restart it.
+When developing the example project, run `mill -w example.serve`. This command will kick up a developement server with a reload on change refresh loop. You only need this to be running _once_. Once running, it will reload on change. You can view the example app at http://localhost:8080 (for example using the playwright skilll). If you need to access the server logs, you'll have to kill the existing one and restart it so that you have the context
 
 Always format before committing - CI will fail without correct formatting.
+
+Always write tests for your changes. Ask for guidance if unsure how to test.
 
 For navigation and symbol information use scalex (see skill) or the metals MCP depending on the level of information needed.
 
@@ -30,7 +30,11 @@ For navigation and symbol information use scalex (see skill) or the metals MCP d
 
 The primary form of validation is via unit testing. Mathlify should ensure that the elements it emits can be found in the dom.
 
-Tests are writting using scala munit, see the folder structure for locations.
+For the example app you shoudl write and execute playwright tests in the appTest folder. e.g. `mill appTest.testForked`. These tests are written using the java playwrtight SDK. They start up a simple file server to serve the example app, then use Playwright to drive a headless browser to interact with the app and validate the behavior. The tests can be found in the appTest/src folder.
+
+Test framework is scala munit, see the folder structure for locations
+
+Try to stay inside the java ecosystem, instead of turning to python use java 21s simple webserver, e.g. `jwebserver -d . /Users/simon/Code/Mathlify/out/example/publish.dest` to serve files for testing.
 
 ## CI
 

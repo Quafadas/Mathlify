@@ -43,7 +43,7 @@ object HomePage:
         p("See how matrix multiplication works cell by cell. Hover to highlight rows and columns, click output cells to reveal the dot-product calculation."),
         Button()(
           "Try It",
-          onClick --> (_ => router.pushState(Page.Matrix))
+          onClick --> (_ => router.pushState(Page.Matrix.default))
         )
       )
     )
