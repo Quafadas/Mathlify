@@ -13,7 +13,7 @@ When developing the example project, run `mill -w example.serve`. This command w
 
 Always format before committing - CI will fail without correct formatting.
 
-Always write tests for your changes. Ask for guidance if unsure how to test.
+Always write tests for your changes. Ask for guidance if unsure how to test. For the example app write playwright tests in order to test the user experience.
 
 For navigation and symbol information use scalex (see skill) or the metals MCP depending on the level of information needed.
 
