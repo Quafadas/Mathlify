@@ -123,34 +123,6 @@ object ArrayBoardPage:
           span(cls := "array-current-selection", s"$r × $c = ${r * c}"): HtmlElement
         }
       ),
-      // Score configuration
-      div(
-        cls := "array-board-score-config",
-        div(
-          cls := "array-board-selector",
-          label(cls := "array-dim-label", "New array pts:"),
-          input(
-            typ := "number",
-            cls := "array-dim-input",
-            minAttr := "0",
-            maxAttr := "100",
-            value <-- newScore.signal.map(_.toString),
-            onInput.mapToValue.map(s => s.toIntOption.map(_.max(0).min(100)).getOrElse(5)) --> newScore.writer
-          )
-        ),
-        div(
-          cls := "array-board-selector",
-          label(cls := "array-dim-label", "Duplicate pts:"),
-          input(
-            typ := "number",
-            cls := "array-dim-input",
-            minAttr := "0",
-            maxAttr := "100",
-            value <-- duplicateScore.signal.map(_.toString),
-            onInput.mapToValue.map(s => s.toIntOption.map(_.max(0).min(100)).getOrElse(2)) --> duplicateScore.writer
-          )
-        )
-      ),
       // Board grid
       div(
         cls := "array-board-wrapper",
@@ -263,6 +235,35 @@ object ArrayBoardPage:
             nextColorIdx.set(0)
             targetNumber.set(randomTarget())
           }
+        )
+      ),
+      p(),
+      // Score configuration
+      div(
+        cls := "array-board-score-config",
+        div(
+          cls := "array-board-selector",
+          label(cls := "array-dim-label", "New array pts:"),
+          input(
+            typ := "number",
+            cls := "array-dim-input",
+            minAttr := "0",
+            maxAttr := "100",
+            value <-- newScore.signal.map(_.toString),
+            onInput.mapToValue.map(s => s.toIntOption.map(_.max(0).min(100)).getOrElse(5)) --> newScore.writer
+          )
+        ),
+        div(
+          cls := "array-board-selector",
+          label(cls := "array-dim-label", "Duplicate pts:"),
+          input(
+            typ := "number",
+            cls := "array-dim-input",
+            minAttr := "0",
+            maxAttr := "100",
+            value <-- duplicateScore.signal.map(_.toString),
+            onInput.mapToValue.map(s => s.toIntOption.map(_.max(0).min(100)).getOrElse(2)) --> duplicateScore.writer
+          )
         )
       )
     )
