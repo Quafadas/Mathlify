@@ -15,11 +15,12 @@ object ClockPage:
   private val NODE_R = 11.0 // node circle radius
 
   // ── Reactive state ─────────────────────────────────────────────────────────
-  private val nVar = Var(10)
-  private val aVar = Var(1)
-  private val bVar = Var(1)
+  private val nVar = Var(12)
+  private val aVar = Var(3)
+  private val bVar = Var(5)
   private val opVar = Var("add") // "add" | "mul" | "pow"
-  private val modeVar = Var("single") // "single" | "pattern"
+  private val modeVar = Var("single") // "single" | "pattern" | "animate"
+  private val animStepVar = Var(0) // current step index in animate mode (0..n)
 
   // ── Modular arithmetic ─────────────────────────────────────────────────────
   private def modN(x: Int, n: Int): Int = ((x % n) + n) % n
@@ -250,12 +251,16 @@ object ClockPage:
     // Recompute clock SVG whenever relevant state changes
     val svgSignal =
       nVar.signal
-        .combineWith(aVar.signal, bVar.signal, opVar.signal, modeVar.signal)
-        .map { case (n, a, b, op, mode) =>
+        .combineWith(aVar.signal, bVar.signal, opVar.signal, modeVar.signal, animStepVar.signal)
+        .map { case (n, a, b, op, mode, step) =>
           val a2 = modN(a, n)
-          if mode == "pattern" then buildSvg(n, List.empty, patternArrows(a2, b, n, op), mode)
-          else buildSvg(n, orbit(a2, b, n, op), List.empty, mode)
-          end if
+          mode match
+            case "pattern" => buildSvg(n, List.empty, patternArrows(a2, b, n, op), "pattern")
+            case "animate" =>
+              val allArrows = patternArrows(a2, b, n, op)
+              buildSvg(n, List.empty, allArrows.take(step.min(n)), "pattern")
+            case _ => buildSvg(n, orbit(a2, b, n, op), List.empty, "single")
+          end match
         }
 
     val seqSignal =
@@ -370,31 +375,76 @@ object ClockPage:
                   cls := "clock-mode-btn" + (if mode == "pattern" then " clock-mode-active" else ""),
                   "Pattern view",
                   onClick --> (_ => modeVar.set("pattern"))
+                ),
+                button(
+                  cls := "clock-mode-btn" + (if mode == "animate" then " clock-mode-active" else ""),
+                  "Animate",
+                  onClick --> { _ =>
+                    animStepVar.set(0); modeVar.set("animate")
+                  }
                 )
               )
             }
           ),
+
+          // Animate step controls (animate mode only)
+          child <-- modeVar.signal
+            .combineWith(nVar.signal, aVar.signal, bVar.signal, opVar.signal, animStepVar.signal)
+            .map { case (mode, n, a, b, op, step) =>
+              if mode == "animate" then
+                val maxStep = n
+                val clamped = step.min(maxStep)
+                div(
+                  cls := "clock-animate-controls",
+                  button(
+                    cls := "clock-anim-btn",
+                    disabled := (clamped <= 0),
+                    "← Prev",
+                    onClick --> (_ => animStepVar.update(s => (s - 1).max(0)))
+                  ),
+                  span(cls := "clock-anim-step-label", s"$clamped / $maxStep arrows"),
+                  button(
+                    cls := "clock-anim-btn",
+                    disabled := (clamped >= maxStep),
+                    "Next →",
+                    onClick --> (_ => animStepVar.update(s => (s + 1).min(maxStep)))
+                  ),
+                  button(
+                    cls := "clock-anim-btn clock-anim-reset",
+                    "Reset",
+                    onClick --> (_ => animStepVar.set(0))
+                  )
+                ): HtmlElement
+              else span(): HtmlElement
+            },
 
           // Result / pattern description
           child <-- nVar.signal
             .combineWith(aVar.signal, bVar.signal, opVar.signal, modeVar.signal)
             .map { case (n, a, b, op, mode) =>
               val a2 = modN(a, n)
-              if mode == "single" then
-                val result = singleResult(a2, b, n, op)
-                Callout(_.variant := "brand")(
-                  cls := "clock-result-callout",
-                  span(strong(exprLabel(a2, b, n, op))),
-                  span(cls := "clock-result-eq", " = "),
-                  span(cls := "clock-result-val", strong(result.toString))
-                ): HtmlElement
-              else
-                Callout(_.variant := "neutral")(
-                  cls := "clock-pattern-callout",
-                  span("Pattern: "),
-                  strong(patternDesc(a2, b, n, op))
-                ): HtmlElement
-              end if
+              mode match
+                case "single" =>
+                  val result = singleResult(a2, b, n, op)
+                  Callout(_.variant := "brand")(
+                    cls := "clock-result-callout",
+                    span(strong(exprLabel(a2, b, n, op))),
+                    span(cls := "clock-result-eq", " = "),
+                    span(cls := "clock-result-val", strong(result.toString))
+                  ): HtmlElement
+                case "animate" =>
+                  Callout(_.variant := "warning")(
+                    cls := "clock-pattern-callout",
+                    span("Animating: "),
+                    strong(patternDesc(a2, b, n, op))
+                  ): HtmlElement
+                case _ =>
+                  Callout(_.variant := "neutral")(
+                    cls := "clock-pattern-callout",
+                    span("Pattern: "),
+                    strong(patternDesc(a2, b, n, op))
+                  ): HtmlElement
+              end match
             },
 
           // Sequence display (single mode only)
@@ -465,9 +515,82 @@ object ClockPage:
               nVar.set(9); aVar.set(0); bVar.set(1); opVar.set("add"); modeVar.set("pattern")
           )
         )
+      ),
+
+      // ── How It Works ──────────────────────────────────────────────────────
+      div(
+        cls := "clock-howto",
+        h3("How It Works"),
+        div(
+          cls := "clock-howto-grid",
+          howtoSection(
+            "📐 Operations",
+            List(
+              (
+                "Addition (a + b mod n)",
+                "Starting at a, each step jumps forward b positions around the clock. Great for exploring regular cycles."
+              ),
+              (
+                "Multiplication (a × b mod n)",
+                "Each step multiplies by b. Reveals rich symmetry structures — try n = 12 and different multipliers to spot star polygons."
+              ),
+              (
+                "Powers (aᵏ mod n)",
+                "Computes aᵏ mod n by repeatedly multiplying a by itself. The cycle length is the multiplicative order of a — fundamental in number theory and cryptography."
+              )
+            )
+          ),
+          howtoSection(
+            "👁 Views",
+            List(
+              (
+                "Single step",
+                "Traces the orbit of your starting value a, drawing one arrow per step until the sequence returns to start."
+              ),
+              (
+                "Pattern view",
+                "Draws all n arrows x → f(x) simultaneously. This reveals the full function graph — star polygons, fixed points, and the overall symmetry at a glance."
+              ),
+              (
+                "Animate",
+                "Builds the pattern one arrow at a time. Use ← Prev and Next → to step through. Watch the structure emerge from scratch and notice when symmetry appears."
+              )
+            )
+          ),
+          howtoSection(
+            "🔁 Sequences & Cycles",
+            List(
+              (
+                "Orbit",
+                "The sequence of values visited starting from a, following the rule until you return to start. Shown as colour-coded chips in Single step mode."
+              ),
+              (
+                "Cycle length (order)",
+                "How many steps before returning to the starting value. A cycle length that divides n means the value is a sub-group generator — key in modular arithmetic."
+              ),
+              (
+                "Fixed point",
+                "A value where f(x) = x: it maps to itself, appearing as a self-loop on the clock. E.g. 0 is always a fixed point of multiplication."
+              )
+            )
+          )
+        )
       )
     )
   end render
+
+  private def howtoSection(heading: String, items: List[(String, String)]): HtmlElement =
+    div(
+      cls := "clock-howto-section",
+      h4(cls := "clock-howto-heading", heading),
+      items.map { case (term, desc) =>
+        div(
+          cls := "clock-howto-item",
+          strong(cls := "clock-howto-term", term),
+          p(cls := "clock-howto-desc", desc)
+        )
+      }
+    )
 
   private def discoverCard(
       emoji: String,

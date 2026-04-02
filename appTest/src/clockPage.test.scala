@@ -91,4 +91,30 @@ class ClockPageTest extends PlaywrightTestBase:
     assert(text.contains("3"), s"Expected result 3, got: $text")
   }
 
+  test("animate mode shows step controls and builds pattern incrementally") {
+    openClockPage()
+    // Switch to animate mode
+    page.locator(".clock-mode-btn").filter(new Locator.FilterOptions().setHasText("Animate")).click()
+    // Animate controls should appear
+    assert(page.locator(".clock-animate-controls").isVisible())
+    // Initially 0 arrows visible, step label shows "0 / 12 arrows"
+    val label = page.locator(".clock-anim-step-label")
+    assert(label.textContent().contains("0 / 12"), s"Expected '0 / 12' step label, got: ${label.textContent()}")
+    // Prev should be disabled, Next should be enabled
+    assert(!page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).isDisabled())
+    // Click Next a few times
+    page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
+    page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
+    assert(label.textContent().contains("2 / 12"), s"Expected '2 / 12' after two nexts, got: ${label.textContent()}")
+    // Reset brings back to 0
+    page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Reset")).click()
+    assert(label.textContent().contains("0 / 12"), s"Expected '0 / 12' after reset, got: ${label.textContent()}")
+  }
+
+  test("howto section is rendered below discover mode") {
+    openClockPage()
+    assert(page.locator(".clock-howto").isVisible())
+    assert(page.locator(".clock-howto-section").count() == 3)
+  }
+
 end ClockPageTest

@@ -665,6 +665,105 @@ wa-divider {
   font-size: 1.1rem;
 }
 
+/* ── Animate mode controls ───────────────────────────────────────────────── */
+
+.clock-animate-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.clock-anim-btn {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.clock-anim-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.clock-anim-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.clock-anim-reset {
+  margin-left: auto;
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.clock-anim-step-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 5rem;
+  text-align: center;
+}
+
+/* ── How It Works section ────────────────────────────────────────────────── */
+
+.clock-howto {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.clock-howto h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.clock-howto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.clock-howto-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+
+.clock-howto-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 0.75rem;
+}
+
+.clock-howto-item {
+  margin-bottom: 0.65rem;
+}
+
+.clock-howto-item:last-child {
+  margin-bottom: 0;
+}
+
+.clock-howto-term {
+  display: block;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.clock-howto-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+  line-height: 1.45;
+}
+
 /* Responsive: stack on small screens */
 @media (max-width: 600px) {
   .clock-main-layout {
