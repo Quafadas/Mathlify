@@ -66,9 +66,12 @@ jobs:
         run: ./mill appTest
       - run: ./mill example.assembleSite
 
-      - uses: actions/upload-pages-artifact@v3
+
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: out/example/assembleSite.dest
 
-      - id: deployment
+      - if: github.ref == 'refs/heads/main'
+        id: deployment
         uses: actions/deploy-pages@v4

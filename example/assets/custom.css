@@ -673,5 +673,171 @@ wa-divider {
   }
   .clock-controls-panel {
     width: 100%;
+/* ── Rekenrek page ───────────────────────────────────────────────────────── */
+
+.rekenrek-page h2 {
+  color: #3b5998;
+  margin-bottom: 0.5rem;
+}
+
+.rekenrek-intro {
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.rekenrek-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #f8f6f0;
+  border: 2px solid #c8bfb0;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.rekenrek-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rekenrek-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rekenrek-row-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #3b5998;
+  min-width: 3.5rem;
+}
+
+.rekenrek-row-count {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #e53935;
+  min-width: 1.5rem;
+  display: inline-block;
+  text-align: center;
+}
+
+.rekenrek-rod-container {
+  position: relative;
+  height: 52px;
+  display: flex;
+  align-items: center;
+}
+
+.rekenrek-rod {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to bottom, #a0927e, #7d6c5c);
+  border-radius: 3px;
+  z-index: 0;
+}
+
+.rekenrek-beads-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+}
+
+.rekenrek-bead-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rekenrek-active-group {
+  flex-shrink: 0;
+}
+
+.rekenrek-inactive-group {
+  flex-shrink: 0;
+}
+
+.rekenrek-bead-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.rekenrek-bead {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.rekenrek-bead:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  filter: brightness(1.1);
+}
+
+.rekenrek-bead:active {
+  transform: scale(1.05);
+}
+
+.bead-red {
+  background: radial-gradient(circle at 35% 35%, #ff6b6b, #e53935);
+  border-color: #b71c1c;
+}
+
+.bead-blue {
+  background: radial-gradient(circle at 35% 35%, #90caf9, #1976d2);
+  border-color: #0d47a1;
+}
+
+.bead-inactive-red {
+  background: radial-gradient(circle at 35% 35%, #ffcdd2, #ef9a9a);
+  border-color: #e57373;
+  opacity: 0.7;
+}
+
+.bead-inactive-blue {
+  background: radial-gradient(circle at 35% 35%, #e3f2fd, #bbdefb);
+  border-color: #90caf9;
+  opacity: 0.7;
+}
+
+.rekenrek-total-section {
+  margin-bottom: 1rem;
+}
+
+.rekenrek-total-callout {
+  font-size: 1.1rem;
+}
+
+.rekenrek-eq-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.rekenrek-reset-btn {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 520px) {
+  .rekenrek-bead {
+    width: 32px;
+    height: 32px;
+  }
+
+  .rekenrek-rod-container {
+    height: 44px;
   }
 }

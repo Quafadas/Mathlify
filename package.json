@@ -5,5 +5,8 @@
   "devDependencies": {
     "jsdom": "^28.1.0",
     "jsdom-global": "^3.0.2"
+  },
+  "dependencies": {
+    "terser": "^5.46.1"
   }
 }
