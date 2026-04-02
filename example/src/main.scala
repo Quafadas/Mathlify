@@ -14,6 +14,7 @@ object Page:
   object Matrix:
     val default: Matrix = Matrix("[(1,2,3),(4,5,6)]", "[(7,8),(9,10),(11,12)]")
   end Matrix
+  case object Clock extends Page
 end Page
 
 // Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
@@ -30,6 +31,7 @@ val expressionRoute =
   Route.static(Page.Expression, root / "expression", basePath = appBasePath)
 val quadraticRoute =
   Route.static(Page.Quadratic, root / "quadratic", basePath = appBasePath)
+val clockRoute = Route.static(Page.Clock, root / "clock", basePath = appBasePath)
 val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])](
   encode = page => (Some(page.a), Some(page.b)),
   decode = args =>
@@ -43,20 +45,22 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
 
 object router
     extends Router[Page](
-      routes = List(homeRoute, expressionRoute, quadraticRoute, matrixRoute),
+      routes = List(homeRoute, expressionRoute, quadraticRoute, clockRoute, matrixRoute),
       serializePage = {
         case Page.Home         => "Home"
         case Page.Expression   => "Expression"
         case Page.Quadratic    => "Quadratic"
+        case Page.Clock        => "Clock"
         case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
       },
       deserializePage = {
         case "Home"                            => Page.Home
         case "Expression"                      => Page.Expression
         case "Quadratic"                       => Page.Quadratic
+        case "Clock"                           => Page.Clock
         case s if s.startsWith("Matrix\u0000") =>
           val rest = s.stripPrefix("Matrix\u0000")
-          val sep = rest.indexOf('\u0000')
+          val sep  = rest.indexOf('\u0000')
           if sep >= 0 then Page.Matrix(rest.substring(0, sep), rest.substring(sep + 1))
           else Page.Matrix.default
           end if
@@ -65,6 +69,7 @@ object router
         case Page.Home       => "Mathlify"
         case Page.Expression => "Expression Explorer – Mathlify"
         case Page.Quadratic  => "Quadratic Formula – Mathlify"
+        case Page.Clock      => "Clock Arithmetic – Mathlify"
         case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
       },
       routeFallback = _ => Page.Home
@@ -81,6 +86,7 @@ def app =
     .collectStatic(Page.Home)(HomePage.render())
     .collectStatic(Page.Expression)(ExpressionPage.render())
     .collectStatic(Page.Quadratic)(QuadraticPage.render())
+    .collectStatic(Page.Clock)(ClockPage.render())
     .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))
 
   div(
