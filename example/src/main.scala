@@ -66,7 +66,7 @@ object router
         case "Rekenrek"                        => Page.Rekenrek
         case s if s.startsWith("Matrix\u0000") =>
           val rest = s.stripPrefix("Matrix\u0000")
-          val sep  = rest.indexOf('\u0000')
+          val sep = rest.indexOf('\u0000')
           if sep >= 0 then Page.Matrix(rest.substring(0, sep), rest.substring(sep + 1))
           else Page.Matrix.default
           end if
