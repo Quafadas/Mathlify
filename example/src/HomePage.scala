@@ -45,6 +45,19 @@ object HomePage:
           "Try It",
           onClick --> (_ => router.pushState(Page.Matrix.default))
         )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
+          Icon()("calculator"),
+          span(" Rekenrek")
+        ),
+        p("An interactive counting frame for exploring numbers and addition. Push the coloured beads to the left to count them — great for building number sense!"),
+        Button()(
+          "Start Counting",
+          onClick --> (_ => router.pushState(Page.Rekenrek))
+        )
       )
     )
 end HomePage

@@ -51,4 +51,4 @@ jobs:
 
       # This should resolve a JVM, download dependancies and leave mill ready for use.
       - name: setup mill
-        run: ./mill __.compile
+        run: ./mill mathlify.compile && ./mill example.compile
