@@ -685,6 +685,36 @@ wa-divider {
   flex-wrap: wrap;
 }
 
+.array-board-score-config {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e2e4e9;
+  border-radius: 8px;
+}
+
+.array-fact-pts {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.1em 0.45em;
+  border-radius: 10px;
+  margin-left: 0.35rem;
+}
+
+.array-fact-pts-new {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.array-fact-pts-dup {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 @media (max-width: 520px) {
   .array-board-grid {
     gap: 2px;

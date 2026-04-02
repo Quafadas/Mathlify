@@ -17,7 +17,8 @@ class ArrayBoardPageTest extends PlaywrightTestBase:
     openArrayBoardPage()
 
     assertEquals(page.locator(".array-board-cell").count(), 100)
-    assert(page.locator(".array-dim-input").count() >= 2)
+    // 2 dimension inputs + 2 score config inputs = at least 4
+    assert(page.locator(".array-dim-input").count() >= 4)
     assert(page.locator(".array-board-target").textContent().contains("Challenge"))
   }
 
@@ -30,6 +31,24 @@ class ArrayBoardPageTest extends PlaywrightTestBase:
 
     val factsText = page.locator(".array-facts-list").textContent()
     assert(factsText.contains("×"), s"Expected multiplication fact, got: $factsText")
+    // First placement is a new array — should show +5 badge
+    assert(factsText.contains("+5"), s"Expected +5 new-array badge, got: $factsText")
+  }
+
+  test("duplicate array scores fewer points than a new one") {
+    openArrayBoardPage()
+
+    // Place the first 3×4 array (new — +5 pts)
+    page.locator(".array-board-cell").nth(0).click()
+    page.waitForSelector(".array-facts-list")
+
+    // Place a second 3×4 array elsewhere (duplicate — +2 pts)
+    // Skip past the first placed region (rows 0-2, cols 0-3); click row 5, col 0 (idx = 50)
+    page.locator(".array-board-cell").nth(50).click()
+
+    val factsText = page.locator(".array-facts-list").textContent()
+    assert(factsText.contains("+5"), s"Expected +5 for new array: $factsText")
+    assert(factsText.contains("+2"), s"Expected +2 for duplicate array: $factsText")
   }
 
   test("score callout updates after placing an array") {
