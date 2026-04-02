@@ -15,12 +15,12 @@ object ClockPage:
   private val NODE_R = 11.0 // node circle radius
 
   // ── Reactive state ─────────────────────────────────────────────────────────
-  private val nVar = Var(12)
-  private val aVar = Var(3)
-  private val bVar = Var(5)
+  private val nVar = Var(10) // default 10
+  private val aVar = Var(1) // default start 1
+  private val bVar = Var(2) // default step 2
   private val opVar = Var("add") // "add" | "mul" | "pow"
-  private val modeVar = Var("single") // "single" | "pattern" | "animate"
-  private val animStepVar = Var(0) // current step index in animate mode (0..n)
+  private val modeVar = Var("animate") // "single" | "pattern" | "animate"
+  private val animStepVar = Var(1) // current step index in animate mode (0..n), default 1
 
   // ── Modular arithmetic ─────────────────────────────────────────────────────
   private def modN(x: Int, n: Int): Int = ((x % n) + n) % n
@@ -271,6 +271,12 @@ object ClockPage:
 
     div(
       cls := "clock-page",
+      // Reset animation step whenever any computation input changes so the
+      // orbit always re-plays from the beginning after a parameter change.
+      aVar.signal.changes --> (_ => animStepVar.set(0)),
+      bVar.signal.changes --> (_ => animStepVar.set(0)),
+      nVar.signal.changes --> (_ => animStepVar.set(0)),
+      opVar.signal.changes --> (_ => animStepVar.set(0)),
       h2("Clock Arithmetic"),
       p(
         cls := "clock-intro",
