@@ -673,6 +673,9 @@ wa-divider {
   }
   .clock-controls-panel {
     width: 100%;
+  }
+}
+
 /* ── Rekenrek page ───────────────────────────────────────────────────────── */
 
 .rekenrek-page h2 {
