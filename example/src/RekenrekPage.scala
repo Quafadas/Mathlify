@@ -28,8 +28,8 @@ object RekenrekPage:
       div(
         cls := "rekenrek-total-section",
         child <-- rowCounts.signal.map { counts =>
-          val r1    = counts(0)
-          val r2    = counts(1)
+          val r1 = counts(0)
+          val r2 = counts(1)
           val total = r1 + r2
           if r1 > 0 || r2 > 0 then
             Callout(_.variant := "success")(
@@ -45,6 +45,7 @@ object RekenrekPage:
               cls := "rekenrek-total-callout",
               "Click beads to start counting!"
             ): HtmlElement
+          end if
         }
       ),
       Button()(
@@ -96,15 +97,17 @@ object RekenrekPage:
   end renderRow
 
   private def beadEl(rowIdx: Int, beadIdx: Int, active: Boolean): HtmlElement =
-    val colorCls = if active then (if beadIdx < 5 then "bead-red" else "bead-blue")
-                   else (if beadIdx < 5 then "bead-inactive-red" else "bead-inactive-blue")
+    val colorCls =
+      if active then (if beadIdx < 5 then "bead-red" else "bead-blue")
+      else (if beadIdx < 5 then "bead-inactive-red"
+            else "bead-inactive-blue")
     div(
       cls := s"rekenrek-bead $colorCls",
       onClick --> { _ =>
         rowCounts.update { counts =>
           val newCount =
-            if active then beadIdx       // deactivate this bead and all to its right
-            else beadIdx + 1             // activate this bead and all to its left
+            if active then beadIdx // deactivate this bead and all to its right
+            else beadIdx + 1 // activate this bead and all to its left
           counts.updated(rowIdx, newCount)
         }
       }
