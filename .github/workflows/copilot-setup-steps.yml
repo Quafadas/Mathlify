@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
-      
+
       - name: Verify Node.js version
         run: node --version
 
@@ -51,4 +51,4 @@ jobs:
 
       # This should resolve a JVM, download dependancies and leave mill ready for use.
       - name: setup mill
-        run: ./mill __.compiledClassesAndSemanticDbFiles
+        run: ./mill __.compile
