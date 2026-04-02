@@ -23,6 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: coursier/cache-action@v8
+
       - name: Set up JDK 24
         uses: actions/setup-java@v4
         with:
@@ -33,18 +35,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g terser
-      - name: Cache Mill
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.mill
-            ~/.ivy2/cache
-            ~/.cache/coursier
-          key: ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-${{ hashFiles('build.mill') }}
-          restore-keys: |
-            ${{ runner.os }}-mill-${{ hashFiles('.mill-version') }}-ivy-
-            ${{ runner.os }}-mill-
-
 
       - name: Cache Playwright dependencies
         id: cache-pw
