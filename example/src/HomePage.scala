@@ -50,6 +50,19 @@ object HomePage:
         cls := "home-card",
         div(
           slot := "header",
+          Icon()("diagram-project"),
+          span(" Dijkstra's Algorithm")
+        ),
+        p("Step through Dijkstra's shortest-path algorithm on a weighted graph. Watch the priority queue grow, distances get relaxed, and the optimal paths emerge."),
+        Button()(
+          "Explore Algorithm",
+          onClick --> (_ => router.pushState(Page.Dijkstra))
+        )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
           Icon()("clock"),
           span(" Clock Arithmetic")
         ),

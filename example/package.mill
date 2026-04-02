@@ -23,7 +23,8 @@ object `package` extends ScalaJsWebAppModule:
   )
 
   override def scalaJSImportMap = Seq(
-    ESModuleImportMapping.Prefix("@awesome.me/webawesome/dist/", "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.4.0/dist-cdn/")
+    ESModuleImportMapping.Prefix("@awesome.me/webawesome/dist/", "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.4.0/dist-cdn/"),
+    ESModuleImportMapping.Prefix("roughjs", "https://cdn.jsdelivr.net/npm/roughjs@4.6.6/+esm")
   )
 
   override def externalStylesheets = Seq(
