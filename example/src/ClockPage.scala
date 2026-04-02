@@ -257,8 +257,9 @@ object ClockPage:
           mode match
             case "pattern" => buildSvg(n, List.empty, patternArrows(a2, b, n, op), "pattern")
             case "animate" =>
-              val allArrows = patternArrows(a2, b, n, op)
-              buildSvg(n, List.empty, allArrows.take(step.min(n)), "pattern")
+              val fullOrbit = orbit(a2, b, n, op)
+              val maxStep = fullOrbit.length - 1
+              buildSvg(n, fullOrbit.take(step.min(maxStep) + 1), List.empty, "single")
             case _ => buildSvg(n, orbit(a2, b, n, op), List.empty, "single")
           end match
         }
@@ -392,7 +393,8 @@ object ClockPage:
             .combineWith(nVar.signal, aVar.signal, bVar.signal, opVar.signal, animStepVar.signal)
             .map { case (mode, n, a, b, op, step) =>
               if mode == "animate" then
-                val maxStep = n
+                val fullOrbit = orbit(modN(a, n), b, n, op)
+                val maxStep = fullOrbit.length - 1
                 val clamped = step.min(maxStep)
                 div(
                   cls := "clock-animate-controls",
@@ -402,7 +404,7 @@ object ClockPage:
                     "← Prev",
                     onClick --> (_ => animStepVar.update(s => (s - 1).max(0)))
                   ),
-                  span(cls := "clock-anim-step-label", s"$clamped / $maxStep arrows"),
+                  span(cls := "clock-anim-step-label", s"$clamped / $maxStep steps"),
                   button(
                     cls := "clock-anim-btn",
                     disabled := (clamped >= maxStep),

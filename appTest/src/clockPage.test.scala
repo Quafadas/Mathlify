@@ -97,7 +97,7 @@ class ClockPageTest extends PlaywrightTestBase:
     page.locator(".clock-mode-btn").filter(new Locator.FilterOptions().setHasText("Animate")).click()
     // Animate controls should appear
     assert(page.locator(".clock-animate-controls").isVisible())
-    // Initially 0 arrows visible, step label shows "0 / 12 arrows"
+    // Initially 0 steps visible, step label shows "0 / 12 steps"
     val label = page.locator(".clock-anim-step-label")
     assert(label.textContent().contains("0 / 12"), s"Expected '0 / 12' step label, got: ${label.textContent()}")
     // Prev should be disabled, Next should be enabled
