@@ -88,4 +88,60 @@ class ArrayBoardPageTest extends PlaywrightTestBase:
     assert(page.locator(".array-board-target").textContent().contains("Challenge"))
   }
 
+  test("challenge accepted checkbox is visible in the target callout") {
+    openArrayBoardPage()
+
+    assert(page.locator(".challenge-accepted-checkbox").count() == 1)
+    assert(!page.locator(".challenge-accepted-checkbox").isChecked())
+    assert(
+      page.locator(".array-board-target").textContent().contains("Challenge accepted"),
+      "Expected challenge-accepted label text"
+    )
+  }
+
+  test("challenge accepted mode: wrong arrays get wrong-item style and score 0") {
+    openArrayBoardPage()
+
+    // Tick "challenge accepted"
+    page.locator(".challenge-accepted-checkbox").click()
+    assert(page.locator(".challenge-accepted-checkbox").isChecked())
+
+    // The challenge callout should gain the active CSS class
+    assert(
+      page.locator(".challenge-accepted-active").count() == 1,
+      "Challenge callout should have active class when checkbox is ticked"
+    )
+
+    // Place a 1×1 array — area 1 is never in challengeTargets, so always "wrong"
+    page.locator(".array-dim-input").first().fill("1") // rows = 1
+    page.locator(".array-dim-input").nth(1).fill("1") // cols = 1
+    page.locator(".array-board-cell").nth(99).click() // bottom-right cell, clear of default 3×4 placement
+    page.waitForSelector(".array-facts-list")
+
+    // The 1×1 array is always wrong — verify wrong-item CSS and "0 ✗" badge
+    assert(
+      page.locator(".array-fact-item-wrong").count() == 1,
+      "Expected one wrong-item entry in the facts list"
+    )
+    assert(
+      page.locator(".array-fact-pts-wrong").count() == 1,
+      "Expected one wrong-pts badge"
+    )
+    val factsText = page.locator(".array-facts-list").textContent()
+    assert(factsText.contains("0 ✗"), s"Expected '0 ✗' for wrong array, got: $factsText")
+    // Wrong array should not contribute to score — score should remain 0
+    val scoreText = page.locator(".array-board-score").textContent()
+    assert(scoreText.contains("Score: 0"), s"Expected Score: 0 in challenge mode for wrong array, got: $scoreText")
+  }
+
+  test("new challenge button unchecks challenge accepted") {
+    openArrayBoardPage()
+
+    page.locator(".challenge-accepted-checkbox").click()
+    assert(page.locator(".challenge-accepted-checkbox").isChecked())
+
+    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("New Challenge")).click()
+
+    assert(!page.locator(".challenge-accepted-checkbox").isChecked(), "Checkbox should be reset after New Challenge")
+  }
 end ArrayBoardPageTest

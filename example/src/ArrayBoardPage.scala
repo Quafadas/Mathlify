@@ -20,6 +20,7 @@ object ArrayBoardPage:
   private val nextColorIdx: Var[Int] = Var(0)
   private val newScore: Var[Int] = Var(5)
   private val duplicateScore: Var[Int] = Var(2)
+  private val challengeAccepted: Var[Boolean] = Var(false)
 
   private val colors = Vector(
     "#e57373",
@@ -39,6 +40,9 @@ object ArrayBoardPage:
   private def randomTarget(): Int =
     challengeTargets(scala.util.Random.nextInt(challengeTargets.size))
 
+  /** Returns true when the array's area matches the challenge target. */
+  private def matchesTarget(arr: PlacedArray, target: Int): Boolean = arr.rows * arr.cols == target
+
   /** Returns (points, isDuplicate) for each placed array in order, using O(n) Set tracking. */
   private def scoredArrays(placedList: List[PlacedArray], ns: Int, ds: Int): List[(PlacedArray, Int, Boolean)] =
     placedList
@@ -50,8 +54,10 @@ object ArrayBoardPage:
       }
       ._1
 
-  private def computeScore(placedList: List[PlacedArray], ns: Int, ds: Int): Int =
-    scoredArrays(placedList, ns, ds).map(_._2).sum
+  private def computeScore(placedList: List[PlacedArray], ns: Int, ds: Int, challengeMode: Boolean, target: Int): Int =
+    val eligible = if challengeMode then placedList.filter(a => matchesTarget(a, target)) else placedList
+    scoredArrays(eligible, ns, ds).map(_._2).sum
+  end computeScore
 
   private def canPlace(
       startRow: Int,
@@ -72,11 +78,14 @@ object ArrayBoardPage:
     selectedCols.set(4)
     nextColorIdx.set(0)
     targetNumber.set(randomTarget())
+    challengeAccepted.set(false)
 
     val scoreSignal =
-      placed.signal.combineWith(newScore.signal, duplicateScore.signal).map { (ps, ns, ds) =>
-        computeScore(ps, ns, ds)
-      }
+      placed.signal
+        .combineWith(newScore.signal, duplicateScore.signal, challengeAccepted.signal, targetNumber.signal)
+        .map { (ps, ns, ds, challenged, target) =>
+          computeScore(ps, ns, ds, challenged, target)
+        }
 
     div(
       cls := "array-board-page",
@@ -88,8 +97,22 @@ object ArrayBoardPage:
       child <-- targetNumber.signal.map { target =>
         Callout(_.variant := "neutral")(
           cls := "array-board-target",
+          cls <-- challengeAccepted.signal.map(if _ then "challenge-accepted-active" else ""),
           b(s"Challenge: Make $target! "),
-          span(s"Place arrays that cover exactly $target squares. How many different ways can you find?")
+          span(s"Place arrays that cover exactly $target squares. How many different ways can you find?"),
+          div(
+            cls := "challenge-accepted-row",
+            label(
+              cls := "challenge-accepted-label",
+              input(
+                typ := "checkbox",
+                cls := "challenge-accepted-checkbox",
+                checked <-- challengeAccepted.signal,
+                onChange.mapToChecked --> challengeAccepted.writer
+              ),
+              span(s" Challenge accepted — only arrays covering exactly $target squares score points")
+            )
+          )
         ): HtmlElement
       },
       // Dimension selectors
@@ -134,13 +157,24 @@ object ArrayBoardPage:
             val c = idx % BOARD_SIZE
 
             val combinedSig =
-              placed.signal.combineWith(hoverCell.signal, selectedRows.signal, selectedCols.signal)
+              placed.signal.combineWith(
+                hoverCell.signal,
+                selectedRows.signal,
+                selectedCols.signal,
+                challengeAccepted.signal,
+                targetNumber.signal
+              )
 
             div(
               cls := "array-board-cell",
-              cls <-- combinedSig.map { case (placedList, hover, rows, cols) =>
+              cls <-- combinedSig.map { case (placedList, hover, rows, cols, challenged, target) =>
                 val arrayIdx = placedList.indexWhere(_.covers(r, c))
-                if arrayIdx >= 0 then Seq("array-cell-placed")
+                if arrayIdx >= 0 then
+                  val arr = placedList(arrayIdx)
+                  val wrongCls =
+                    if challenged && !matchesTarget(arr, target) then Seq("array-cell-wrong")
+                    else Seq.empty
+                  Seq("array-cell-placed") ++ wrongCls
                 else
                   hover match
                     case Some((hr, hc)) if r >= hr && r < hr + rows && c >= hc && c < hc + cols =>
@@ -170,13 +204,12 @@ object ArrayBoardPage:
           }.toList
         )
       ),
-      // Score callout
       div(
         cls := "array-board-score-section",
         child <-- scoreSignal
-          .combineWith(placed.signal, targetNumber.signal, newScore.signal, duplicateScore.signal)
-          .map { case (score, placedList, target, ns, ds) =>
-            val hits = placedList.count(a => a.rows * a.cols == target)
+          .combineWith(placed.signal, targetNumber.signal, newScore.signal, duplicateScore.signal, challengeAccepted.signal)
+          .map { (score, placedList, target, ns, ds, challenged) =>
+            val hits = placedList.count(a => matchesTarget(a, target))
             if placedList.isEmpty then
               Callout(_.variant := "neutral")(
                 cls := "array-board-score",
@@ -187,35 +220,44 @@ object ArrayBoardPage:
                 cls := "array-board-score",
                 b(s"Score: $score"),
                 span(s" (new: ${ns}pts, duplicate: ${ds}pts)"),
-                if hits > 0 then span(s" — $hits way${if hits == 1 then "" else "s"} to make $target! 🎉")
+                if challenged then
+                  if hits > 0 then span(s" — $hits way${if hits == 1 then "" else "s"} to make $target! 🎉")
+                  else span(s" — Challenge mode: only $target-area arrays count for points.")
+                else if hits > 0 then span(s" — $hits way${if hits == 1 then "" else "s"} to make $target! 🎉")
                 else span(s" — Keep going, can you make $target?")
               ): HtmlElement
             end if
           }
       ),
       // Placed arrays list
-      child <-- placed.signal.combineWith(newScore.signal, duplicateScore.signal).map { case (placedList, ns, ds) =>
-        if placedList.isEmpty then div(): HtmlElement
-        else
-          div(
-            cls := "array-facts-list",
-            h3("Arrays placed:"),
-            scoredArrays(placedList, ns, ds).map { case (arr, pts, isDuplicate) =>
-              val ptsCls =
-                if isDuplicate then "array-fact-pts array-fact-pts-dup"
-                else "array-fact-pts array-fact-pts-new"
-              div(
-                cls := "array-fact-item",
+      child <-- placed.signal
+        .combineWith(newScore.signal, duplicateScore.signal, challengeAccepted.signal, targetNumber.signal)
+        .map { case (placedList, ns, ds, challenged, target) =>
+          if placedList.isEmpty then div(): HtmlElement
+          else
+            div(
+              cls := "array-facts-list",
+              h3("Arrays placed:"),
+              scoredArrays(placedList, ns, ds).map { case (arr, pts, isDuplicate) =>
+                val isWrong = challenged && !matchesTarget(arr, target)
+                val effectivePts = if isWrong then 0 else pts
+                val ptsCls =
+                  if isWrong then "array-fact-pts array-fact-pts-wrong"
+                  else if isDuplicate then "array-fact-pts array-fact-pts-dup"
+                  else "array-fact-pts array-fact-pts-new"
+                val itemCls = if isWrong then "array-fact-item array-fact-item-wrong" else "array-fact-item"
                 div(
-                  cls := "array-fact-swatch",
-                  styleAttr := s"background-color: ${colors(arr.colorIdx % colors.size)};"
-                ),
-                span(s"${arr.rows} × ${arr.cols} = ${arr.rows * arr.cols}"),
-                span(cls := ptsCls, s" +$pts")
-              )
-            }
-          ): HtmlElement
-      },
+                  cls := itemCls,
+                  div(
+                    cls := "array-fact-swatch",
+                    styleAttr := s"background-color: ${colors(arr.colorIdx % colors.size)};"
+                  ),
+                  span(s"${arr.rows} × ${arr.cols} = ${arr.rows * arr.cols}"),
+                  span(cls := ptsCls, if isWrong then " 0 ✗" else s" +$effectivePts")
+                )
+              }
+            ): HtmlElement
+        },
       // Action buttons
       div(
         cls := "array-board-buttons",
@@ -233,6 +275,7 @@ object ArrayBoardPage:
             placed.set(List.empty)
             hoverCell.set(None)
             nextColorIdx.set(0)
+            challengeAccepted.set(false)
             targetNumber.set(randomTarget())
           }
         )

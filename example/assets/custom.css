@@ -715,6 +715,54 @@ wa-divider {
   color: #92400e;
 }
 
+.array-fact-pts-wrong {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.array-fact-item-wrong {
+  opacity: 0.65;
+  text-decoration: line-through;
+  text-decoration-color: #dc2626;
+}
+
+.array-cell-placed.array-cell-wrong {
+  opacity: 0.45;
+  outline: 2px solid #c62828;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 3px,
+    transparent 3px,
+    transparent 8px
+  );
+}
+
+.array-board-target.challenge-accepted-active {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.challenge-accepted-row {
+  margin-top: 0.6rem;
+}
+
+.challenge-accepted-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.challenge-accepted-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #f59e0b;
+}
+
 @media (max-width: 520px) {
   .array-board-grid {
     gap: 2px;
