@@ -57,7 +57,13 @@ object HomePage:
         Button()(
           "Explore Clocks",
           onClick --> (_ => router.pushState(Page.Clock))
-            Icon ()("calculator"),
+        )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
+          Icon()("calculator"),
           span(" Rekenrek")
         ),
         p("An interactive counting frame for exploring numbers and addition. Push the coloured beads to the left to count them — great for building number sense!"),

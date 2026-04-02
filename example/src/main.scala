@@ -48,8 +48,7 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
 
 object router
     extends Router[Page](
-      routes = List(homeRoute, expressionRoute, quadraticRoute, clockRoute, matrixRoute),
-      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, matrixRoute),
+      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, clockRoute, matrixRoute),
       serializePage = {
         case Page.Home         => "Home"
         case Page.Expression   => "Expression"
