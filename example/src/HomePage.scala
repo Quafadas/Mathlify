@@ -71,6 +71,21 @@ object HomePage:
           "Start Counting",
           onClick --> (_ => router.pushState(Page.Rekenrek))
         )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
+          Icon()("grid"),
+          span(" Array Board Game")
+        ),
+        p(
+          "Build rectangular arrays on a 10×10 grid! Place arrays to score points, find multiple ways to make a target number, and discover multiplication through hands-on exploration."
+        ),
+        Button()(
+          "Play Now",
+          onClick --> (_ => router.pushState(Page.ArrayBoard))
+        )
       )
     )
 end HomePage
