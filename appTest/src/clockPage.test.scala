@@ -139,8 +139,8 @@ class ClockPageTest extends PlaywrightTestBase:
     val label = page.locator(".clock-anim-step-label")
     assert(label.textContent().contains("0 / 6"), s"Expected orbit length 6 from a=1, got: ${label.textContent()}")
     // Advance 3 steps
-    for _ <- 1 to 3 do
-      page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
+    for _ <- 1 to 3 do page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
+    end for
     assert(label.textContent().contains("3 / 6"), s"Expected step 3 / 6, got: ${label.textContent()}")
     // Change start value to 3 — animation must reset to step 0 with the new orbit length
     page.locator("input.clock-number-input").nth(0).fill("3")
