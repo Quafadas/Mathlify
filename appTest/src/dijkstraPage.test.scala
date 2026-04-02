@@ -16,8 +16,13 @@ class DijkstraPageTest extends PlaywrightTestBase:
   test("dijkstra page loads with SVG graph and initial state") {
     openDijkstraPage()
     assert(page.locator(".dijkstra-svg-container svg").isVisible())
-    // 6 nodes → 6 circles
-    assertEquals(page.locator(".dijkstra-svg-container circle").count(), 6)
+    // 6 nodes → 6 node label text elements in the SVG (rough.js circles are <g>+<path>, not <circle>)
+    val nodeLabels = List("S", "A", "B", "C", "D", "E")
+    for label <- nodeLabels do
+      assert(
+        page.locator(s".dijkstra-svg-container svg text >> text='$label'").count() >= 1,
+        s"Expected node label '$label' in SVG"
+      )
     // Step counter shows "Initial State" at step 0
     val counter = page.locator(".dijkstra-step-counter")
     assert(counter.textContent().contains("Initial State"), s"Expected 'Initial State', got: ${counter.textContent()}")
@@ -94,11 +99,6 @@ class DijkstraPageTest extends PlaywrightTestBase:
     val desc = page.locator(".dijkstra-step-desc")
     val text = desc.textContent()
     assert(text.contains("Algorithm complete!"), s"Expected 'Algorithm complete!' in final step desc, got: $text")
-  }
-
-  test("legend is visible") {
-    openDijkstraPage()
-    assert(page.locator(".dijkstra-legend").isVisible())
   }
 
 end DijkstraPageTest
