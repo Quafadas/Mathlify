@@ -131,16 +131,16 @@ object DijkstraPage:
 
     // Edge weight labels — kept as native SVG text so they sit on top of rough lines
     val edgeTextElems = edges.map { e =>
-      val from       = nodeById(e.from)
-      val to         = nodeById(e.to)
-      val (mx, my)   = edgeMid(from, to)
-      val dx         = to.x - from.x; val dy = to.y - from.y
-      val len        = Math.sqrt(dx * dx + dy * dy)
-      val ox         = if len < 0.01 then 0.0 else -dy / len * 11.0
-      val oy         = if len < 0.01 then 0.0 else dx / len * 11.0
+      val from = nodeById(e.from)
+      val to = nodeById(e.to)
+      val (mx, my) = edgeMid(from, to)
+      val dx = to.x - from.x; val dy = to.y - from.y
+      val len = Math.sqrt(dx * dx + dy * dy)
+      val ox = if len < 0.01 then 0.0 else -dy / len * 11.0
+      val oy = if len < 0.01 then 0.0 else dx / len * 11.0
       S.text(
-        S.x     := fmt(mx + ox),
-        S.y     := fmt(my + oy),
+        S.x := fmt(mx + ox),
+        S.y := fmt(my + oy),
         S.style := "text-anchor: middle; dominant-baseline: central; font-size: 12px; fill: #475569; font-weight: 600;",
         TextNode(e.weight.toString)
       )
@@ -149,8 +149,8 @@ object DijkstraPage:
     // Node labels — kept as native SVG text so they overlay the rough circles
     val nodeLabelElems = nodes.map { n =>
       S.text(
-        S.x     := fmt(n.x),
-        S.y     := fmt(n.y),
+        S.x := fmt(n.x),
+        S.y := fmt(n.y),
         S.style := "text-anchor: middle; dominant-baseline: central; font-size: 13px; fill: #1e293b; font-weight: bold;",
         TextNode(n.label)
       )
@@ -158,7 +158,7 @@ object DijkstraPage:
 
     val svgElem = S.svg(
       S.viewBox := s"0 0 ${fmt(SVG_W)} ${fmt(SVG_H)}",
-      S.style   := s"width: 100%; max-width: ${SVG_W.toInt}px; height: auto; display: block;",
+      S.style := s"width: 100%; max-width: ${SVG_W.toInt}px; height: auto; display: block;",
       edgeTextElems,
       nodeLabelElems,
       // Rough shapes are drawn imperatively on mount so they appear beneath text labels.
@@ -166,35 +166,35 @@ object DijkstraPage:
       // the Laminar-managed text elements already in the SVG sit on top.
       onMountCallback { ctx =>
         import org.scalajs.dom
-        val svgDom  = ctx.thisNode.ref.asInstanceOf[dom.SVGSVGElement]
-        val rc      = Rough.svg(svgDom)
+        val svgDom = ctx.thisNode.ref.asInstanceOf[dom.SVGSVGElement]
+        val rc = Rough.svg(svgDom)
         val refNode = svgDom.firstChild // first text element — rough shapes go before it
 
         // Draw edges (rough lines) — inserted in order before the text children
         for e <- edges do
-          val from       = nodeById(e.from)
-          val to         = nodeById(e.to)
-          val (sx, sy)   = shortenPt(from.x, from.y, to.x, to.y, NODE_R + 2)
-          val (ex, ey)   = shortenPt(to.x, to.y, from.x, from.y, NODE_R + 2)
-          val isCurrent  = state.current.exists(c => c == e.from || c == e.to)
-          val lineOpts   = new RoughOptions {}
-          lineOpts.stroke      = if isCurrent then "#3b82f6" else "#94a3b8"
+          val from = nodeById(e.from)
+          val to = nodeById(e.to)
+          val (sx, sy) = shortenPt(from.x, from.y, to.x, to.y, NODE_R + 2)
+          val (ex, ey) = shortenPt(to.x, to.y, from.x, from.y, NODE_R + 2)
+          val isCurrent = state.current.exists(c => c == e.from || c == e.to)
+          val lineOpts = new RoughOptions {}
+          lineOpts.stroke = if isCurrent then "#3b82f6" else "#94a3b8"
           lineOpts.strokeWidth = if isCurrent then 2.5 else 1.5
-          lineOpts.roughness   = 1.5
+          lineOpts.roughness = 1.5
           val lineEl = rc.line(sx, sy, ex, ey, lineOpts)
           svgDom.insertBefore(lineEl, refNode)
         end for
 
         // Draw node circles — inserted before text children (after edges)
         for n <- nodes do
-          val fill     = nodeColor(n.id, state)
-          val stroke   = nodeStroke(n.id, state)
+          val fill = nodeColor(n.id, state)
+          val stroke = nodeStroke(n.id, state)
           val circOpts = new RoughOptions {}
-          circOpts.fill        = fill
-          circOpts.stroke      = stroke
+          circOpts.fill = fill
+          circOpts.stroke = stroke
           circOpts.strokeWidth = 2.0
-          circOpts.fillStyle   = "solid"
-          circOpts.roughness   = 1.5
+          circOpts.fillStyle = "solid"
+          circOpts.roughness = 1.5
           val circEl = rc.circle(n.x, n.y, NODE_R * 2, circOpts)
           svgDom.insertBefore(circEl, refNode)
         end for

@@ -23,6 +23,7 @@ class DijkstraPageTest extends PlaywrightTestBase:
         page.locator(s".dijkstra-svg-container svg text >> text='$label'").count() >= 1,
         s"Expected node label '$label' in SVG"
       )
+    end for
     // Step counter shows "Initial State" at step 0
     val counter = page.locator(".dijkstra-step-counter")
     assert(counter.textContent().contains("Initial State"), s"Expected 'Initial State', got: ${counter.textContent()}")

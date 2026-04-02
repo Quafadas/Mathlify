@@ -4,23 +4,24 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 import org.scalajs.dom
 
-/** Options controlling how rough shapes are drawn.
-  * All fields are optional – leave as `js.undefined` to use the library defaults.
+/** Options controlling how rough shapes are drawn. All fields are optional – leave as `js.undefined` to use the library defaults.
   */
 trait RoughOptions extends js.Object:
-  var roughness: js.UndefOr[Double]      = js.undefined
-  var bowing: js.UndefOr[Double]         = js.undefined
-  var stroke: js.UndefOr[String]         = js.undefined
-  var strokeWidth: js.UndefOr[Double]    = js.undefined
-  var fill: js.UndefOr[String]           = js.undefined
+  var roughness: js.UndefOr[Double] = js.undefined
+  var bowing: js.UndefOr[Double] = js.undefined
+  var stroke: js.UndefOr[String] = js.undefined
+  var strokeWidth: js.UndefOr[Double] = js.undefined
+  var fill: js.UndefOr[String] = js.undefined
+
   /** "hachure" | "solid" | "zigzag" | "cross-hatch" | "dots" | "dashed" | "zigzag-line" */
-  var fillStyle: js.UndefOr[String]      = js.undefined
-  var fillWeight: js.UndefOr[Double]     = js.undefined
-  var hachureAngle: js.UndefOr[Double]   = js.undefined
-  var hachureGap: js.UndefOr[Double]     = js.undefined
-  var seed: js.UndefOr[Int]              = js.undefined
+  var fillStyle: js.UndefOr[String] = js.undefined
+  var fillWeight: js.UndefOr[Double] = js.undefined
+  var hachureAngle: js.UndefOr[Double] = js.undefined
+  var hachureGap: js.UndefOr[Double] = js.undefined
+  var seed: js.UndefOr[Int] = js.undefined
   var simplification: js.UndefOr[Double] = js.undefined
   var preserveVertices: js.UndefOr[Boolean] = js.undefined
+end RoughOptions
 
 /** Facade for a RoughCanvas instance (draws on a <canvas> element). */
 @js.native
@@ -51,6 +52,7 @@ trait RoughCanvas extends js.Object:
 
   def path(d: String): Unit = js.native
   def path(d: String, options: RoughOptions): Unit = js.native
+end RoughCanvas
 
 /** Facade for a RoughSVG instance (returns SVG <g> elements to insert into the DOM). */
 @js.native
@@ -81,6 +83,7 @@ trait RoughSVG extends js.Object:
 
   def path(d: String): dom.Element = js.native
   def path(d: String, options: RoughOptions): dom.Element = js.native
+end RoughSVG
 
 /** Entry-point object – mirrors the default export of the `roughjs` npm package. */
 @js.native
@@ -91,3 +94,4 @@ object Rough extends js.Object:
 
   def svg(el: dom.SVGSVGElement): RoughSVG = js.native
   def svg(el: dom.SVGSVGElement, config: js.Object): RoughSVG = js.native
+end Rough
