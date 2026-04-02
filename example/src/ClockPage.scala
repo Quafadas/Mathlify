@@ -15,9 +15,9 @@ object ClockPage:
   private val NODE_R = 11.0 // node circle radius
 
   // ── Reactive state ─────────────────────────────────────────────────────────
-  private val nVar = Var(12)
-  private val aVar = Var(3)
-  private val bVar = Var(5)
+  private val nVar = Var(10)
+  private val aVar = Var(1)
+  private val bVar = Var(1)
   private val opVar = Var("add") // "add" | "mul" | "pow"
   private val modeVar = Var("single") // "single" | "pattern"
 
