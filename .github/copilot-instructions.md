@@ -17,6 +17,8 @@ Format before committing - CI will fail without correct formatting.
 
 _Always_ write tests for your changes. Ask for guidance if unsure how to test. For the example app write playwright to test the user experience.
 
+_Always_ run the test suite before committing. `./mill test` for the library, `./mill appTest` for the example app.
+
 For navigation and symbol information use scalex (for this repository). Cellar (for queries to external dependancies) or the metals MCP depending on the level of information needed.
 
 ## Folder Structure:
