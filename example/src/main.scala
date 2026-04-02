@@ -16,6 +16,7 @@ object Page:
   object Matrix:
     val default: Matrix = Matrix("[(1,2,3),(4,5,6)]", "[(7,8),(9,10),(11,12)]")
   end Matrix
+  case object Clock extends Page
 end Page
 
 // Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
@@ -32,6 +33,7 @@ val expressionRoute =
   Route.static(Page.Expression, root / "expression", basePath = appBasePath)
 val quadraticRoute =
   Route.static(Page.Quadratic, root / "quadratic", basePath = appBasePath)
+val clockRoute = Route.static(Page.Clock, root / "clock", basePath = appBasePath)
 val rekenrekRoute =
   Route.static(Page.Rekenrek, root / "rekenrek", basePath = appBasePath)
 val arrayBoardRoute =
@@ -49,11 +51,12 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
 
 object router
     extends Router[Page](
-      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, matrixRoute),
+      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, clockRoute, matrixRoute),
       serializePage = {
         case Page.Home         => "Home"
         case Page.Expression   => "Expression"
         case Page.Quadratic    => "Quadratic"
+        case Page.Clock        => "Clock"
         case Page.Rekenrek     => "Rekenrek"
         case Page.ArrayBoard   => "ArrayBoard"
         case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
@@ -62,6 +65,7 @@ object router
         case "Home"                            => Page.Home
         case "Expression"                      => Page.Expression
         case "Quadratic"                       => Page.Quadratic
+        case "Clock"                           => Page.Clock
         case "Rekenrek"                        => Page.Rekenrek
         case "ArrayBoard"                      => Page.ArrayBoard
         case s if s.startsWith("Matrix\u0000") =>
@@ -75,6 +79,7 @@ object router
         case Page.Home       => "Mathlify"
         case Page.Expression => "Expression Explorer – Mathlify"
         case Page.Quadratic  => "Quadratic Formula – Mathlify"
+        case Page.Clock      => "Clock Arithmetic – Mathlify"
         case Page.Rekenrek   => "Rekenrek – Mathlify"
         case Page.ArrayBoard => "Array Board Game – Mathlify"
         case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
@@ -93,6 +98,7 @@ def app =
     .collectStatic(Page.Home)(HomePage.render())
     .collectStatic(Page.Expression)(ExpressionPage.render())
     .collectStatic(Page.Quadratic)(QuadraticPage.render())
+    .collectStatic(Page.Clock)(ClockPage.render())
     .collectStatic(Page.Rekenrek)(RekenrekPage.render())
     .collectStatic(Page.ArrayBoard)(ArrayBoardPage.render())
     .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))

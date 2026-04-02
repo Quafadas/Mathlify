@@ -50,6 +50,19 @@ object HomePage:
         cls := "home-card",
         div(
           slot := "header",
+          Icon()("clock"),
+          span(" Clock Arithmetic")
+        ),
+        p("Explore modular arithmetic visually. Watch numbers wrap around a clock, discover cycles, and reveal hidden star-polygon patterns through multiplication."),
+        Button()(
+          "Explore Clocks",
+          onClick --> (_ => router.pushState(Page.Clock))
+        )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
           Icon()("calculator"),
           span(" Rekenrek")
         ),

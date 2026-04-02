@@ -371,6 +371,410 @@ wa-divider {
   font-size: 1.2rem;
 }
 
+/* ── Clock Arithmetic Page ─────────────────────────────────────────────── */
+
+.clock-page {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.clock-page h2 {
+  font-size: 1.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.clock-intro {
+  color: #475569;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Two-column layout: clock on left, controls on right */
+.clock-main-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ── Left panel ─────────────────────────────────────────────────────────── */
+
+.clock-visual-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clock-modulus-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.clock-slider {
+  flex: 1;
+  accent-color: #3b5998;
+  cursor: pointer;
+}
+
+.clock-n-badge {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+  min-width: 3.5rem;
+}
+
+.clock-svg-container svg {
+  overflow: visible;
+}
+
+/* Colour legend */
+.clock-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #475569;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #1e293b;
+}
+
+.legend-start  { background: #22c55e; }
+.legend-path   { background: #93c5fd; }
+.legend-return { background: #fca5a5; border-color: #ef4444; }
+
+.legend-text {
+  margin-right: 0.4rem;
+}
+
+/* ── Right panel ────────────────────────────────────────────────────────── */
+
+.clock-controls-panel {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 220px;
+}
+
+.clock-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.25rem;
+}
+
+/* Operation buttons */
+.clock-op-selector {
+  display: flex;
+  flex-direction: column;
+}
+
+.clock-op-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.clock-op-btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.clock-op-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.clock-op-active {
+  background: #1e40af;
+  border-color: #1e40af;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Number inputs */
+.clock-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.clock-number-input {
+  width: 80px;
+  padding: 0.3rem 0.5rem;
+  font-size: 1rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.clock-number-input:focus {
+  outline: 2px solid #3b5998;
+  outline-offset: -1px;
+}
+
+/* Mode toggle */
+.clock-mode-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.clock-mode-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.clock-mode-btn {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.clock-mode-btn:hover {
+  background: #e2e8f0;
+}
+
+.clock-mode-active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Result callout */
+.clock-result-callout,
+.clock-pattern-callout {
+  margin-top: 0.25rem;
+}
+
+.clock-result-eq {
+  font-size: 1.1rem;
+  margin: 0 0.2rem;
+}
+
+.clock-result-val {
+  font-size: 1.3rem;
+  color: #1d4ed8;
+}
+
+/* Sequence display */
+.clock-sequence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.clock-seq-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.seq-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1.5px solid #93c5fd;
+}
+
+.seq-chip-start {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.seq-chip-return {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.clock-cycle-info {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Discover Mode ───────────────────────────────────────────────────────── */
+
+.clock-discover {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.clock-discover h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.clock-discover-intro {
+  color: #475569;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.clock-discoveries {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.discover-card {
+  cursor: default;
+}
+
+.discover-emoji {
+  font-size: 1.1rem;
+}
+
+/* ── Animate mode controls ───────────────────────────────────────────────── */
+
+.clock-animate-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.clock-anim-btn {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.clock-anim-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.clock-anim-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.clock-anim-reset {
+  margin-left: auto;
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.clock-anim-step-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 5rem;
+  text-align: center;
+}
+
+/* ── How It Works section ────────────────────────────────────────────────── */
+
+.clock-howto {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.clock-howto h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.clock-howto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.clock-howto-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+
+.clock-howto-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 0.75rem;
+}
+
+.clock-howto-item {
+  margin-bottom: 0.65rem;
+}
+
+.clock-howto-item:last-child {
+  margin-bottom: 0;
+}
+
+.clock-howto-term {
+  display: block;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.clock-howto-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+  line-height: 1.45;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 600px) {
+  .clock-main-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+  .clock-controls-panel {
+    width: 100%;
+  }
+}
+
 /* ── Rekenrek page ───────────────────────────────────────────────────────── */
 
 .rekenrek-page h2 {
