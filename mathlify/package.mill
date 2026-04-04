@@ -34,11 +34,12 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
     def mvnDeps = Seq(build.V.fastparse, build.V.spire)
     override def artifactName = Task("mathlify")
-    override def sources = Task.Sources(moduleDir / os.up / "src")
+    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / os.up / "src-jvm-js")
 
     object test extends ScalaTests, TestModule.Munit:
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
-      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+      override def sources =
+        Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src", moduleDir / os.up / os.up / "crosstest" / "src-jvm-js")
     end test
   end jvm
 
@@ -48,23 +49,24 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(build.V.fastparse, build.V.spire)
     override def artifactName = Task("mathlify")
-    override def sources = Task.Sources(moduleDir / os.up / "src")
+    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / os.up / "src-jvm-js")
 
     object test extends TestScalaJSModule, TestModule.Munit:
       def scalaVersion = build.V.scalaVersion
       def scalaJSVersion = build.V.scalaJSVersion
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
       def moduleDeps = Seq(js)
-      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+      override def sources =
+        Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src", moduleDir / os.up / os.up / "crosstest" / "src-jvm-js")
       override def jsEnvConfig = JsEnvConfig.JsDom()
     end test
   end js
 
-  // ── Cross-platform Native module ────────────────────────────────────────────
+  // ── Cross-platform Native module (no Spire — not available for Native) ──────
   object native extends ScalaNativeModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
     def scalaNativeVersion = "0.5.10"
-    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
+    def mvnDeps = Seq(build.V.fastparse)
     override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
