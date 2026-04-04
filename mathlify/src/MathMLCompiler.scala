@@ -20,14 +20,14 @@ object MathMLCompiler:
     e
   end moElem
 
-  private def prec(expr: MathExpr): Int = expr match
-    case _: Add | _: Sub      => 1
-    case _: Mul | _: Fraction => 2
-    case _: Neg               => 3
-    case _: Pow               => 4
-    case _                    => 99
+  private def prec[A](expr: MathExpr[A]): Int = expr match
+    case _: Add[?] | _: Sub[?]      => 1
+    case _: Mul[?] | _: Fraction[?] => 2
+    case _: Neg[?]                  => 3
+    case _: Pow[?]                  => 4
+    case _                          => 99
 
-  private def withParens(expr: MathExpr, minPrec: Int, path: String): Element =
+  private def withParens[A](expr: MathExpr[A], minPrec: Int, path: String)(using show: MathShow[A]): Element =
     if prec(expr) < minPrec then
       val row = elem("mrow", path)
       row.appendChild(moElem("(", s"$path.open"))
@@ -36,12 +36,12 @@ object MathMLCompiler:
       row
     else compile(expr, path)
 
-  def compile(expr: MathExpr, path: String = "0"): Element =
+  def compile[A](expr: MathExpr[A], path: String = "0")(using show: MathShow[A]): Element =
     expr match
 
       case Number(v) =>
         val e = elem("mn", path)
-        val str = if v % 1 == 0 && !v.isInfinite then v.toLong.toString else v.toString
+        val str = show.show(v)
         e.appendChild(dom.document.createTextNode(str))
         e
 
@@ -70,10 +70,9 @@ object MathMLCompiler:
         val row = elem("mrow", path)
         row.appendChild(compile(l, s"$path.0"))
         row.appendChild(moElem("-", s"$path.op"))
-        // r needs parens if it's Add or Sub
         val rElem = r match
-          case _: Add | _: Sub => withParens(r, 1, s"$path.1")
-          case _               => compile(r, s"$path.1")
+          case _: Add[?] | _: Sub[?] => withParens(r, 1, s"$path.1")
+          case _                     => compile(r, s"$path.1")
         row.appendChild(rElem)
         row
 
@@ -91,12 +90,11 @@ object MathMLCompiler:
 
       case Pow(base, exponent) =>
         val msup = elem("msup", path)
-        // base needs parens if Add/Sub/Mul/Neg/Fraction
         val baseElem = base match
-          case _: Add | _: Sub | _: Mul | _: Neg | _: Fraction => withParens(base, 99, s"$path.0")
-          case _                                               => compile(base, s"$path.0")
+          case _: Add[?] | _: Sub[?] | _: Mul[?] | _: Neg[?] | _: Fraction[?] =>
+            withParens(base, 99, s"$path.0")
+          case _ => compile(base, s"$path.0")
         msup.appendChild(baseElem)
-        // exponent in an mrow
         val expRow = elem("mrow", s"$path.1")
         expRow.appendChild(compile(exponent, s"$path.1.0"))
         msup.appendChild(expRow)
@@ -106,8 +104,8 @@ object MathMLCompiler:
         val row = elem("mrow", path)
         row.appendChild(moElem("-", s"$path.op"))
         val inner = e match
-          case _: Add | _: Sub => withParens(e, 1, s"$path.0")
-          case _               => compile(e, s"$path.0")
+          case _: Add[?] | _: Sub[?] => withParens(e, 1, s"$path.0")
+          case _                     => compile(e, s"$path.0")
         row.appendChild(inner)
         row
 
@@ -146,7 +144,6 @@ object MathMLCompiler:
         val row = elem("mrow", path)
         val underover = elem("munderover", s"$path.0")
         underover.appendChild(moElem("∑", s"$path.0.0"))
-        // Lower: <mrow>index = lower</mrow>
         val lowerRow = elem("mrow", s"$path.0.1")
         lowerRow.appendChild(compile(index, s"$path.0.1.0"))
         lowerRow.appendChild(moElem("=", s"$path.0.1.op"))
@@ -276,7 +273,7 @@ object MathMLCompiler:
         mstyle.appendChild(compile(content, s"$path.0"))
         mstyle
 
-  def toMathML(expr: MathExpr): Element =
+  def toMathML[A](expr: MathExpr[A])(using show: MathShow[A]): Element =
     val math = dom.document.createElementNS(NS, "math")
     math.setAttribute("data-mathlify-id", "root")
     math.appendChild(compile(expr, "0"))

@@ -8,7 +8,7 @@ class AsciiMathSpec extends AnyFunSuite:
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private def check(input: String, expected: MathExpr): Unit =
+  private def check(input: String, expected: MathExpr[Double]): Unit =
     assert(AsciiMath.translate(input) == Right(expected), s"input: $input")
 
   // ── 1. Atoms ──────────────────────────────────────────────────────────────
@@ -544,9 +544,9 @@ class AsciiMathSpec extends AnyFunSuite:
 
   test("AM: {(a),(b):} -> visible { open, invisible :} close, matrix inside") {
     AsciiMath.translate("{(a),(b):}") match
-      case Right(BracketGroup("{", "", _: Matrix)) => // pass
-      case Right(other)                            => fail(s"expected BracketGroup with open={{, close=empty, got $other")
-      case Left(err)                               => fail(s"parse error: $err")
+      case Right(BracketGroup("{", "", _: Matrix[?])) => // pass
+      case Right(other)                               => fail(s"expected BracketGroup with open={{, close=empty, got $other")
+      case Left(err)                                  => fail(s"parse error: $err")
   }
 
   test("MathML: BracketGroup with empty open omits open mo") {

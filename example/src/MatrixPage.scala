@@ -28,7 +28,7 @@ object MatrixPage:
           case Some(m) => Right(m)
           case None    => Left("Expression is not a matrix. Use e.g. [(1,2),(3,4)]")
 
-  private def extractMatrix(expr: MathExpr): Option[ParsedMatrix] =
+  private def extractMatrix(expr: MathExpr[Double]): Option[ParsedMatrix] =
     expr match
       case MathExpr.BracketGroup(_, _, inner)          => extractMatrix(inner)
       case MathExpr.Group(inner)                       => extractMatrix(inner)
@@ -39,7 +39,7 @@ object MatrixPage:
         end if
       case _ => None
 
-  private def evalToDouble(expr: MathExpr): Option[Double] =
+  private def evalToDouble(expr: MathExpr[Double]): Option[Double] =
     expr match
       case MathExpr.Number(v)               => Some(v)
       case MathExpr.Neg(MathExpr.Number(v)) => Some(-v)
