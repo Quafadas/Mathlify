@@ -62,14 +62,14 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   // ── Cross-platform Native module ────────────────────────────────────────────
   object native extends ScalaNativeModule, build.MathlifyPublishModule:
     def scalaVersion       = build.V.scalaVersion
-    def scalaNativeVersion = "0.5.7"
+    def scalaNativeVersion = "0.5.10"
     def mvnDeps            = Seq(build.V.fastparse)
     override def artifactName = Task { "mathlify" }
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends TestScalaNativeModule, TestModule.Munit:
       def scalaVersion       = build.V.scalaVersion
-      def scalaNativeVersion = "0.5.7"
+      def scalaNativeVersion = "0.5.10"
       def mvnDeps = Seq(mvn"org.scalameta::munit::1.2.2")
       override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
