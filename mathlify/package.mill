@@ -5,7 +5,7 @@ import mill.scalajslib.api.*
 
 // ── Main module: backward-compat JS build + platform sub-modules ──────────────
 object `package` extends ScalaJSModule, build.MathlifyPublishModule:
-  def scalaVersion   = build.V.scalaVersion
+  def scalaVersion = build.V.scalaVersion
   def scalaJSVersion = build.V.scalaJSVersion
   def mvnDeps = Seq(
     build.V.jsDom,
@@ -13,11 +13,11 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     build.V.fastparse
   )
   // Add JS-only sources (MathMLCompiler, LaminarRenderer)
-  def jsSources                = Task.Sources(moduleDir / "src-js")
-  override def sources = Task { super.sources() ++ jsSources() }
+  def jsSources = Task.Sources(moduleDir / "src-js")
+  override def sources = Task(super.sources() ++ jsSources())
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:
-    def scalaVersion   = build.V.scalaVersion
+    def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
       mvn"org.scalameta::munit::${build.V.munitVersion}",
@@ -31,8 +31,8 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   // ── Cross-platform JVM module ───────────────────────────────────────────────
   object jvm extends ScalaModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
-    def mvnDeps      = Seq(build.V.fastparse)
-    override def artifactName = Task { "mathlify" }
+    def mvnDeps = Seq(build.V.fastparse)
+    override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends ScalaTests, TestModule.Munit:
@@ -43,35 +43,35 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
 
   // ── Cross-platform JS module (no Laminar/DOM) ───────────────────────────────
   object js extends ScalaJSModule, build.MathlifyPublishModule:
-    def scalaVersion   = build.V.scalaVersion
+    def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
-    def mvnDeps        = Seq(build.V.fastparse)
-    override def artifactName = Task { "mathlify" }
+    def mvnDeps = Seq(build.V.fastparse)
+    override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends TestScalaJSModule, TestModule.Munit:
-      def scalaVersion   = build.V.scalaVersion
+      def scalaVersion = build.V.scalaVersion
       def scalaJSVersion = build.V.scalaJSVersion
-      def mvnDeps      = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
-      def moduleDeps   = Seq(js)
-      override def sources     = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+      def moduleDeps = Seq(js)
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
       override def jsEnvConfig = JsEnvConfig.JsDom()
     end test
   end js
 
   // ── Cross-platform Native module ────────────────────────────────────────────
   object native extends ScalaNativeModule, build.MathlifyPublishModule:
-    def scalaVersion       = build.V.scalaVersion
+    def scalaVersion = build.V.scalaVersion
     def scalaNativeVersion = "0.5.10"
-    def mvnDeps            = Seq(build.V.fastparse)
-    override def artifactName = Task { "mathlify" }
+    def mvnDeps = Seq(build.V.fastparse)
+    override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends TestScalaNativeModule, TestModule.Munit:
-      def scalaVersion       = build.V.scalaVersion
+      def scalaVersion = build.V.scalaVersion
       def scalaNativeVersion = "0.5.10"
-      def mvnDeps            = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
-      def moduleDeps         = Seq(native)
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+      def moduleDeps = Seq(native)
       override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
   end native

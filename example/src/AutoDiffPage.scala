@@ -199,7 +199,7 @@ object AutoDiffPage:
       case Left(_)     => mathlify.EvalError("Parse error")
 
     val (fValue, fDeriv) = result match
-      case mathlify.Numeric(d)  => (fmt(d.value), fmt(d.deriv))
+      case mathlify.Numeric(d)   => (fmt(d.value), fmt(d.deriv))
       case mathlify.EvalError(m) => (s"Error: $m", "Error")
       case _                     => ("N/A", "N/A")
 
@@ -276,8 +276,7 @@ object AutoDiffPage:
                 _ => Seq(Callout(_.variant := "warning")("Parse error"): HtmlElement),
                 expr =>
                   val vars = mathlify.Evaluator.unboundVars(expr).toSeq.sorted
-                  if vars.isEmpty then
-                    Seq(Callout(_.variant := "success")("No free variables — expression is fully evaluable!"): HtmlElement)
+                  if vars.isEmpty then Seq(Callout(_.variant := "success")("No free variables — expression is fully evaluable!"): HtmlElement)
                   else
                     // Auto-select first differentiation variable
                     if diffVar.now().isEmpty || !vars.contains(diffVar.now()) then diffVar.set(vars.head)
