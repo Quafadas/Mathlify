@@ -70,7 +70,8 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     object test extends TestScalaNativeModule, TestModule.Munit:
       def scalaVersion       = build.V.scalaVersion
       def scalaNativeVersion = "0.5.10"
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+      def mvnDeps            = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+      def moduleDeps         = Seq(native)
       override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
   end native
