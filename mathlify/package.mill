@@ -20,7 +20,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaVersion   = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
-      mvn"org.scalameta::munit::build.V.munitVersion",
+      mvn"org.scalameta::munit::${build.V.munitVersion}",
       mvn"com.raquo::domtestutils::19.0.0",
       build.V.jsDom
     )
@@ -36,7 +36,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends ScalaTests, TestModule.Munit:
-      def mvnDeps = Seq(mvn"org.scalameta::munit::build.V.munitVersion")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
       override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
   end jvm
@@ -52,7 +52,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     object test extends TestScalaJSModule, TestModule.Munit:
       def scalaVersion   = build.V.scalaVersion
       def scalaJSVersion = build.V.scalaJSVersion
-      def mvnDeps      = Seq(mvn"org.scalameta::munit::build.V.munitVersion")
+      def mvnDeps      = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
       def moduleDeps   = Seq(js)
       override def sources     = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
       override def jsEnvConfig = JsEnvConfig.JsDom()
@@ -70,7 +70,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     object test extends TestScalaNativeModule, TestModule.Munit:
       def scalaVersion       = build.V.scalaVersion
       def scalaNativeVersion = "0.5.10"
-      def mvnDeps = Seq(mvn"org.scalameta::munit::build.V.munitVersion")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
       override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
   end native
