@@ -196,12 +196,11 @@ object AutoDiffPage:
   ): HtmlElement =
     val result = mathlify.AsciiMath.translate(exprAscii) match
       case Right(expr) => mathlify.ForwardDiff.differentiate(expr, env, wrt)
-      case Left(_)     => mathlify.EvalError("Parse error")
+      case Left(_)     => Left("Parse error")
 
     val (fValue, fDeriv) = result match
-      case mathlify.Numeric(j)   => (fmt(j.real), fmt(j.infinitesimal(0)))
-      case mathlify.EvalError(m) => (s"Error: $m", "Error")
-      case _                     => ("N/A", "N/A")
+      case Right((v, d)) => (fmt(v), fmt(d))
+      case Left(msg)     => (s"Error: $msg", "Error")
 
     val envStr = env.map { case (k, v) => s"$k = ${fmt(v)}" }.mkString(", ")
 
@@ -235,12 +234,11 @@ object AutoDiffPage:
     val asciiVar = Var("x^2 * y + y^3")
     val asciiResult = asciiVar.signal.map(mathlify.AsciiMath.translate)
     val varMap = Var(Map.empty[String, Double])
-    val diffVar = Var("")
 
     div(
       cls := "evaluator-section",
       h2("Interactive Derivative Evaluator"),
-      p("Enter any expression, set variable values, and choose which variable to differentiate with respect to."),
+      p("Enter any expression, set variable values, and see ALL partial derivatives computed in a single pass."),
       div(
         cls := "cards-grid",
         // Expression input
@@ -264,7 +262,7 @@ object AutoDiffPage:
             )
           )
         ),
-        // Variables and differentiation variable
+        // Variables
         Card(_.withHeader := true)(
           cls := "variables-card",
           div(slot := "header", Icon()("sliders"), span(" Variables")),
@@ -278,10 +276,6 @@ object AutoDiffPage:
                   val vars = mathlify.Evaluator.unboundVars(expr).toSeq.sorted
                   if vars.isEmpty then Seq(Callout(_.variant := "success")("No free variables — expression is fully evaluable!"): HtmlElement)
                   else
-                    // Auto-select first differentiation variable
-                    val currentDiffVar = diffVar.now()
-                    if currentDiffVar.isEmpty || !vars.contains(currentDiffVar) then diffVar.set(vars.head)
-                    end if
                     vars.map { v =>
                       Input(_.label := s"$v", _.placeholder := "0", _.tpe := "number")(
                         onInput.mapToValue --> { value =>
@@ -292,39 +286,18 @@ object AutoDiffPage:
                   end if
               )
             }
-          ),
-          Divider()(),
-          p("Differentiate with respect to:"),
-          div(
-            cls := "diff-variable-select",
-            children <-- asciiResult.map { s =>
-              s.fold(
-                _ => Seq.empty,
-                expr =>
-                  val vars = mathlify.Evaluator.unboundVars(expr).toSeq.sorted
-                  vars.map { v =>
-                    val isSelected = diffVar.signal.map(_ == v)
-                    Button()(
-                      cls := "diff-var-btn",
-                      cls <-- isSelected.map(sel => if sel then "diff-var-selected" else ""),
-                      s"∂/∂$v",
-                      onClick --> (_ => diffVar.set(v))
-                    ): HtmlElement
-                  }
-              )
-            }
           )
         ),
-        // Results
+        // Results — all partial derivatives at once
         Card(_.withHeader := true)(
           cls := "eval-card",
           div(slot := "header", Icon()("equals"), span(" Result")),
-          p("The function value and its derivative:"),
+          p("The function value and all partial derivatives (computed in a single pass):"),
           div(
             cls := "eval-result",
             child <-- asciiResult
-              .combineWith(varMap.signal, diffVar.signal)
-              .map { case (parseResult, vars, wrt) =>
+              .combineWith(varMap.signal)
+              .map { case (parseResult, vars) =>
                 parseResult.fold(
                   _ => span("Parse error"): HtmlElement,
                   expr =>
@@ -341,22 +314,22 @@ object AutoDiffPage:
                           Callout(_.variant := "danger")(s"Error: $msg"): HtmlElement
                         case _ =>
                           Callout(_.variant := "neutral")("Partially reduced"): HtmlElement
-                    else if !allBound || wrt.isEmpty then
+                    else if !allBound then
                       Callout(_.variant := "neutral")(
-                        "Set all variable values and choose a differentiation variable."
+                        "Set all variable values to compute the gradient."
                       ): HtmlElement
                     else
-                      mathlify.ForwardDiff.differentiate(expr, vars, wrt) match
-                        case mathlify.Numeric(j) =>
+                      mathlify.ForwardDiff.gradient(expr, vars) match
+                        case Right(dr) =>
                           Callout(_.variant := "success")(
                             cls := "derivative-result",
-                            div(cls := "result-row", span("f = "), strong(cls := "numeric-result", fmt(j.real))),
-                            div(cls := "result-row", span(s"∂f/∂$wrt = "), strong(cls := "numeric-result", fmt(j.infinitesimal(0))))
+                            div(cls := "result-row", span("f = "), strong(cls := "numeric-result", fmt(dr.value))),
+                            dr.partials.toSeq.sorted.map { case (name, deriv) =>
+                              div(cls := "result-row", span(s"∂f/∂$name = "), strong(cls := "numeric-result", fmt(deriv)))
+                            }
                           ): HtmlElement
-                        case mathlify.EvalError(msg) =>
+                        case Left(msg) =>
                           Callout(_.variant := "danger")(s"Error: $msg"): HtmlElement
-                        case _ =>
-                          Callout(_.variant := "neutral")("Partially reduced"): HtmlElement
                     end if
                 )
               }

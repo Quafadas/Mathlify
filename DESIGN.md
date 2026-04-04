@@ -17,10 +17,14 @@ dual number type, as specified in the issue title "(via spire)".
 
 Forward-mode AD works by augmenting every value with its derivative (a *dual number*).
 Spire's `Jet[Double]` provides exactly this: `Jet(real, infinitesimal)` where `real` is
-the function value and `infinitesimal(0)` is the derivative.
+the function value and `infinitesimal` is an array of partial derivatives.
 
-We bridge Spire's algebra to mathlify's evaluator by providing a `given MathTrig[Jet[Double]]`
-that delegates arithmetic and transcendental operations to Spire's type class instances.
+We use `JetDim(n)` where `n` is the number of free variables, assigning one infinitesimal
+dimension per variable. This means **all partial derivatives are computed simultaneously in
+a single evaluator pass** — the i-th component of the result's infinitesimal array holds ∂f/∂xᵢ.
+
+We bridge Spire's algebra to mathlify's evaluator by dynamically creating a `MathTrig[Jet[Double]]`
+instance for the required dimension, delegating trig/exp/log/sqrt to Spire's type class instances.
 
 **Dual number arithmetic:**
 
@@ -107,28 +111,23 @@ Similar to the existing ExpressionPage but enhanced:
 
 ### Step 1: `ForwardDiff.scala` (mathlify/src/)
 
-Uses Spire's `Jet[Double]` with `JetDim(1)` for single-variable forward-mode AD:
+Uses Spire's `Jet[Double]` with `JetDim(n)` where `n` = number of free variables:
 
 ```
 import spire.math.{Jet, JetDim}
 
 object ForwardDiff:
-  private given JetDim = JetDim(1)
-  given MathTrig[Jet[Double]] with ...  // bridges Spire → mathlify evaluator
-  given MathShow[Jet[Double]] with ...
+  case class DiffResult(value: Double, partials: Map[String, Double])
+
+  private def makeMathTrig(n: Int): MathTrig[Jet[Double]]  // dimension-aware factory
+
+  def gradient(expr, env): Either[String, DiffResult]       // all partials in one pass
+  def differentiate(expr, env, wrt): Either[String, (Double, Double)]  // convenience
 ```
 
-Plus a helper function:
-```
-def differentiate(
-  expr: MathExpr[Double],
-  env: Map[String, Double],
-  withRespectTo: String
-): EvalResult[Jet[Double]]
-```
-
-This seeds the target variable with `Jet(v, Array(1.0))` and others with `Jet(v, Array(0.0))`,
-then calls `Evaluator.eval[Jet[Double]](expr, jetEnv)`.
+Each variable `xᵢ` is seeded with `Jet(v, inf)` where `inf(i) = 1.0` and all other
+components are 0. The evaluator computes with `n`-dimensional Jets, and the result Jet's
+`infinitesimal(i)` holds ∂f/∂xᵢ.
 
 ### Step 2: `ForwardDiffSpec.scala` (mathlify/test/src/)
 

@@ -61,10 +61,10 @@ class AutoDiffPageTest extends PlaywrightTestBase:
     assert(evaluator.locator(".eval-card").count() == 1, "Expected eval card")
   }
 
-  test("evaluator shows differentiation variable buttons for default expression") {
+  test("evaluator shows variable inputs for default expression") {
     openAutoDiffPage()
-    val diffBtns = page.locator(".diff-var-btn")
-    assert(diffBtns.count() >= 2, s"Expected at least 2 diff variable buttons, got ${diffBtns.count()}")
+    val varInputs = page.locator(".variable-inputs")
+    assert(varInputs.count() >= 1, s"Expected variable inputs section")
   }
 
 end AutoDiffPageTest

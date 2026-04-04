@@ -5,117 +5,138 @@ import spire.math.Jet
 import spire.math.JetDim
 import spire.implicits.given
 
-/** Forward-mode automatic differentiation using Spire's `Jet[Double]` dual numbers.
+/** Forward-mode automatic differentiation using Spire's `Jet[Double]`.
   *
-  * A `Jet[Double]` pairs a function value (`real`) with its derivative(s) (`infinitesimal`), so that derivative information propagates automatically through arithmetic and
-  * transcendental operations.
-  *
-  * We use `JetDim(1)` throughout: a single infinitesimal dimension, which suffices for computing one partial derivative per evaluation pass.
+  * Uses `JetDim(n)` where `n` is the number of free variables, assigning one infinitesimal dimension per variable. All partial derivatives are computed simultaneously in a single
+  * evaluator pass — the i-th component of the result's infinitesimal array holds ∂f/∂xᵢ.
   */
 object ForwardDiff:
 
-  /** Dimension used for single-variable forward-mode AD. */
-  private given dim: JetDim = JetDim(1)
+  /** Result of computing all partial derivatives in a single pass. */
+  case class DiffResult(value: Double, partials: Map[String, Double])
 
-  /** Bridge from Spire's algebra for `Jet[Double]` to mathlify's `MathTrig` type class. */
-  given MathTrig[Jet[Double]] with
-    val zero: Jet[Double] = Jet.zero[Double]
-    val one: Jet[Double] = Jet.one[Double]
-    def fromLong(n: Long): Jet[Double] = Jet(n.toDouble)
-    def fromDouble(d: Double): Jet[Double] = Jet(d)
+  /** Create a MathTrig[Jet[Double]] for a specific number of infinitesimal dimensions. */
+  private def makeMathTrig(n: Int): MathTrig[Jet[Double]] =
+    given JetDim = JetDim(n)
+    new MathTrig[Jet[Double]]:
+      val zero: Jet[Double] = Jet.zero[Double]
+      val one: Jet[Double] = Jet.one[Double]
+      def fromLong(l: Long): Jet[Double] = Jet(l.toDouble)
+      def fromDouble(d: Double): Jet[Double] = Jet(d)
 
-    def plus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a + b
-    def minus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a - b
-    def times(a: Jet[Double], b: Jet[Double]): Jet[Double] = a * b
-    def negate(a: Jet[Double]): Jet[Double] = -a
-    def div(a: Jet[Double], b: Jet[Double]): Jet[Double] = a / b
+      def plus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a + b
+      def minus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a - b
+      def times(a: Jet[Double], b: Jet[Double]): Jet[Double] = a * b
+      def negate(a: Jet[Double]): Jet[Double] = -a
+      def div(a: Jet[Double], b: Jet[Double]): Jet[Double] = a / b
 
-    def pow(a: Jet[Double], b: Jet[Double]): Jet[Double] =
-      if b.infinitesimal(0) == 0.0 then
-        // Constant exponent: use power rule directly for numerical stability
+      // Multi-dimensional power rule: computes ∂(a^b)/∂xᵢ for each dimension i
+      def pow(a: Jet[Double], b: Jet[Double]): Jet[Double] =
+        val dim = a.infinitesimal.length
         val v = scala.math.pow(a.real, b.real)
-        val d = b.real * scala.math.pow(a.real, b.real - 1.0) * a.infinitesimal(0)
-        Jet(v, Array(d))
-      else
-        // General case: a^b = exp(b * ln(a))
-        val v = scala.math.pow(a.real, b.real)
-        val d = v * (b.infinitesimal(0) * scala.math.log(a.real) + b.real * a.infinitesimal(0) / a.real)
-        Jet(v, Array(d))
+        val isConstExp = b.infinitesimal.forall(_ == 0.0)
+        val inf = Array.tabulate(dim) { i =>
+          if isConstExp then b.real * scala.math.pow(a.real, b.real - 1.0) * a.infinitesimal(i)
+          else v * (b.infinitesimal(i) * scala.math.log(a.real) + b.real * a.infinitesimal(i) / a.real)
+        }
+        Jet(v, inf)
+      end pow
 
-    def sin(a: Jet[Double]): Jet[Double] = spire.math.sin(a)
-    def cos(a: Jet[Double]): Jet[Double] = spire.math.cos(a)
-    def tan(a: Jet[Double]): Jet[Double] = spire.math.tan(a)
-    def exp(a: Jet[Double]): Jet[Double] = spire.math.exp(a)
-    def log(a: Jet[Double]): Jet[Double] = spire.math.log(a)
-    def sqrt(a: Jet[Double]): Jet[Double] = spire.math.sqrt(a)
-  end given
+      def sin(a: Jet[Double]): Jet[Double] = spire.math.sin(a)
+      def cos(a: Jet[Double]): Jet[Double] = spire.math.cos(a)
+      def tan(a: Jet[Double]): Jet[Double] = spire.math.tan(a)
+      def exp(a: Jet[Double]): Jet[Double] = spire.math.exp(a)
+      def log(a: Jet[Double]): Jet[Double] = spire.math.log(a)
+      def sqrt(a: Jet[Double]): Jet[Double] = spire.math.sqrt(a)
+    end new
+  end makeMathTrig
 
   given MathShow[Jet[Double]] with
     def show(a: Jet[Double]): String =
-      val vs =
-        if a.real % 1 == 0 && !a.real.isInfinite then a.real.toLong.toString
-        else a.real.toString
-      val d = a.infinitesimal(0)
-      val ds =
-        if d % 1 == 0 && !d.isInfinite then d.toLong.toString
-        else d.toString
-      s"($vs, $ds)"
+      def fmtD(d: Double) = if d % 1 == 0 && !d.isInfinite then d.toLong.toString else d.toString
+      val vs = fmtD(a.real)
+      if a.infinitesimal.length == 1 then s"($vs, ${fmtD(a.infinitesimal(0))})"
+      else
+        val ds = a.infinitesimal.map(fmtD).mkString("[", ", ", "]")
+        s"($vs, $ds)"
+      end if
     end show
   end given
 
-  /** Compute the value and partial derivative of an expression with respect to a given variable.
+  /** Compute the value and ALL partial derivatives in a single evaluator pass.
     *
-    * @param expr
-    *   the parsed expression
-    * @param env
-    *   variable bindings (name → value)
-    * @param withRespectTo
-    *   the variable to differentiate with respect to
-    * @return
-    *   an `EvalResult[Jet[Double]]` where `Numeric(jet)` gives both `jet.real` (function value) and `jet.infinitesimal(0)` (partial derivative)
+    * Uses `JetDim(n)` where `n = env.size`, assigning one infinitesimal dimension per variable (sorted alphabetically). The result contains the function value and a map from each
+    * variable name to its partial derivative.
     */
+  def gradient(
+      expr: MathExpr[Double],
+      env: Map[String, Double]
+  ): Either[String, DiffResult] =
+    val prepared = Evaluator.foldConstants(Evaluator.substituteConstantsPublic(expr))
+    val varNames = env.keys.toSeq.sorted
+    val n = varNames.size
+    if n == 0 then
+      Evaluator.eval(prepared) match
+        case Numeric(v)   => Right(DiffResult(v, Map.empty))
+        case EvalError(m) => Left(m)
+        case _            => Left("Expression could not be fully evaluated")
+    else
+      given alg: MathTrig[Jet[Double]] = makeMathTrig(n)
+      val lifted = liftToJet(prepared, n)
+      val jetEnv: Map[String, Jet[Double]] = varNames.zipWithIndex.map { case (name, idx) =>
+        val inf = Array.fill(n)(0.0)
+        inf(idx) = 1.0
+        name -> Jet(env(name), inf)
+      }.toMap
+      Evaluator.eval[Jet[Double]](lifted, jetEnv) match
+        case Numeric(j) =>
+          val partials = varNames.zipWithIndex.map { case (name, idx) =>
+            name -> j.infinitesimal(idx)
+          }.toMap
+          Right(DiffResult(j.real, partials))
+        case EvalError(msg) => Left(msg)
+        case _              => Left("Expression could not be fully evaluated")
+      end match
+    end if
+  end gradient
+
+  /** Compute the value and partial derivative w.r.t. one variable (convenience wrapper around `gradient`). */
   def differentiate(
       expr: MathExpr[Double],
       env: Map[String, Double],
       withRespectTo: String
-  ): EvalResult[Jet[Double]] =
-    val prepared = Evaluator.foldConstants(Evaluator.substituteConstantsPublic(expr))
-    val lifted = liftToJet(prepared)
-    val jetEnv: Map[String, Jet[Double]] = env.map { case (name, value) =>
-      name -> Jet(value, Array(if name == withRespectTo then 1.0 else 0.0))
-    }
-    Evaluator.eval[Jet[Double]](lifted, jetEnv)
-  end differentiate
+  ): Either[String, (Double, Double)] =
+    gradient(expr, env).map(dr => (dr.value, dr.partials.getOrElse(withRespectTo, 0.0)))
 
-  /** Lift a `MathExpr[Double]` to `MathExpr[Jet[Double]]` by wrapping all `Number(d)` nodes. */
-  private def liftToJet(expr: MathExpr[Double]): MathExpr[Jet[Double]] = expr match
-    case Number(v)                      => Number(Jet(v, Array(0.0)))
+  /** Lift a `MathExpr[Double]` to `MathExpr[Jet[Double]]` with the given number of infinitesimal dimensions. */
+  private def liftToJet(expr: MathExpr[Double], dim: Int): MathExpr[Jet[Double]] = expr match
+    case Number(v)                      => Number(Jet(v, Array.fill(dim)(0.0)))
     case Symbol(n)                      => Symbol(n)
     case Constant(n)                    => Constant(n)
-    case Add(l, r)                      => Add(liftToJet(l), liftToJet(r))
-    case Sub(l, r)                      => Sub(liftToJet(l), liftToJet(r))
-    case Mul(l, r)                      => Mul(liftToJet(l), liftToJet(r))
-    case Div(l, r)                      => Div(liftToJet(l), liftToJet(r))
-    case Pow(b, e)                      => Pow(liftToJet(b), liftToJet(e))
-    case Neg(e)                         => Neg(liftToJet(e))
-    case FunctionCall(n, args)          => FunctionCall(n, args.map(liftToJet))
-    case Fraction(n, d)                 => Fraction(liftToJet(n), liftToJet(d))
-    case Root(deg, rad)                 => Root(deg.map(liftToJet), liftToJet(rad))
-    case Group(e)                       => Group(liftToJet(e))
-    case ExprSeq(es)                    => ExprSeq(es.map(liftToJet))
-    case BracketGroup(o, c, e)          => BracketGroup(o, c, liftToJet(e))
-    case Superscript(b, s)              => Superscript(liftToJet(b), liftToJet(s))
-    case Subscript(b, s)                => Subscript(liftToJet(b), liftToJet(s))
+    case Add(l, r)                      => Add(liftToJet(l, dim), liftToJet(r, dim))
+    case Sub(l, r)                      => Sub(liftToJet(l, dim), liftToJet(r, dim))
+    case Mul(l, r)                      => Mul(liftToJet(l, dim), liftToJet(r, dim))
+    case Div(l, r)                      => Div(liftToJet(l, dim), liftToJet(r, dim))
+    case Pow(b, e)                      => Pow(liftToJet(b, dim), liftToJet(e, dim))
+    case Neg(e)                         => Neg(liftToJet(e, dim))
+    case FunctionCall(n, args)          => FunctionCall(n, args.map(liftToJet(_, dim)))
+    case Fraction(n, d)                 => Fraction(liftToJet(n, dim), liftToJet(d, dim))
+    case Root(deg, rad)                 => Root(deg.map(liftToJet(_, dim)), liftToJet(rad, dim))
+    case Group(e)                       => Group(liftToJet(e, dim))
+    case ExprSeq(es)                    => ExprSeq(es.map(liftToJet(_, dim)))
+    case BracketGroup(o, c, e)          => BracketGroup(o, c, liftToJet(e, dim))
+    case Superscript(b, s)              => Superscript(liftToJet(b, dim), liftToJet(s, dim))
+    case Subscript(b, s)                => Subscript(liftToJet(b, dim), liftToJet(s, dim))
     case Operator(s)                    => Operator(s)
     case TextNode(c)                    => TextNode(c)
-    case SubSup(b, sub, sup)            => SubSup(liftToJet(b), liftToJet(sub), liftToJet(sup))
-    case Over(b, t)                     => Over(liftToJet(b), liftToJet(t))
-    case Under(b, bot)                  => Under(liftToJet(b), liftToJet(bot))
-    case Style(v, c)                    => Style(v, liftToJet(c))
-    case Enclose(n, c)                  => Enclose(n, liftToJet(c))
-    case Color(col, c)                  => Color(col, liftToJet(c))
-    case Sum(idx, lo, hi, body)         => Sum(liftToJet(idx), liftToJet(lo), liftToJet(hi), liftToJet(body))
-    case Integral(v, lo, hi, body)      => Integral(liftToJet(v), liftToJet(lo), liftToJet(hi), liftToJet(body))
-    case MathVector(elems)              => MathVector(elems.map(liftToJet))
-    case Matrix(elems, r, c, rs, cs, o) => Matrix(elems.map(liftToJet), r, c, rs, cs, o)
+    case SubSup(b, sub, sup)            => SubSup(liftToJet(b, dim), liftToJet(sub, dim), liftToJet(sup, dim))
+    case Over(b, t)                     => Over(liftToJet(b, dim), liftToJet(t, dim))
+    case Under(b, bot)                  => Under(liftToJet(b, dim), liftToJet(bot, dim))
+    case Style(v, c)                    => Style(v, liftToJet(c, dim))
+    case Enclose(n, c)                  => Enclose(n, liftToJet(c, dim))
+    case Color(col, c)                  => Color(col, liftToJet(c, dim))
+    case Sum(idx, lo, hi, body)         => Sum(liftToJet(idx, dim), liftToJet(lo, dim), liftToJet(hi, dim), liftToJet(body, dim))
+    case Integral(v, lo, hi, body)      => Integral(liftToJet(v, dim), liftToJet(lo, dim), liftToJet(hi, dim), liftToJet(body, dim))
+    case MathVector(elems)              => MathVector(elems.map(liftToJet(_, dim)))
+    case Matrix(elems, r, c, rs, cs, o) => Matrix(elems.map(liftToJet(_, dim)), r, c, rs, cs, o)
 end ForwardDiff
