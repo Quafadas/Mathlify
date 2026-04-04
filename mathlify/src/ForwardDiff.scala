@@ -35,11 +35,17 @@ object ForwardDiff:
         val dim = a.infinitesimal.length
         val v = scala.math.pow(a.real, b.real)
         val isConstExp = b.infinitesimal.forall(_ == 0.0)
-        val inf = Array.tabulate(dim) { i =>
-          if isConstExp then b.real * scala.math.pow(a.real, b.real - 1.0) * a.infinitesimal(i)
-          else v * (b.infinitesimal(i) * scala.math.log(a.real) + b.real * a.infinitesimal(i) / a.real)
-        }
-        Jet(v, inf)
+        if isConstExp then
+          val factor = b.real * scala.math.pow(a.real, b.real - 1.0)
+          Jet(v, Array.tabulate(dim)(i => factor * a.infinitesimal(i)))
+        else
+          Jet(
+            v,
+            Array.tabulate(dim) { i =>
+              v * (b.infinitesimal(i) * scala.math.log(a.real) + b.real * a.infinitesimal(i) / a.real)
+            }
+          )
+        end if
       end pow
 
       def sin(a: Jet[Double]): Jet[Double] = spire.math.sin(a)
@@ -84,9 +90,7 @@ object ForwardDiff:
       given alg: MathTrig[Jet[Double]] = makeMathTrig(n)
       val lifted = liftToJet(prepared, n)
       val jetEnv: Map[String, Jet[Double]] = varNames.zipWithIndex.map { case (name, idx) =>
-        val inf = Array.fill(n)(0.0)
-        inf(idx) = 1.0
-        name -> Jet(env(name), inf)
+        name -> Jet(env(name), Array.tabulate(n)(i => if i == idx then 1.0 else 0.0))
       }.toMap
       Evaluator.eval[Jet[Double]](lifted, jetEnv) match
         case Numeric(j) =>
