@@ -31,8 +31,7 @@ object ForwardDiff:
     def div(a: Jet[Double], b: Jet[Double]): Jet[Double] = a / b
 
     def pow(a: Jet[Double], b: Jet[Double]): Jet[Double] =
-      // Jet supports fpow via exp(b * log(a))
-      if b.infinitesimal.forall(_ == 0.0) then
+      if b.infinitesimal(0) == 0.0 then
         // Constant exponent: use power rule directly for numerical stability
         val v = scala.math.pow(a.real, b.real)
         val d = b.real * scala.math.pow(a.real, b.real - 1.0) * a.infinitesimal(0)

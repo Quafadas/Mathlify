@@ -279,7 +279,8 @@ object AutoDiffPage:
                   if vars.isEmpty then Seq(Callout(_.variant := "success")("No free variables — expression is fully evaluable!"): HtmlElement)
                   else
                     // Auto-select first differentiation variable
-                    if diffVar.now().isEmpty || !vars.contains(diffVar.now()) then diffVar.set(vars.head)
+                    val currentDiffVar = diffVar.now()
+                    if currentDiffVar.isEmpty || !vars.contains(currentDiffVar) then diffVar.set(vars.head)
                     end if
                     vars.map { v =>
                       Input(_.label := s"$v", _.placeholder := "0", _.tpe := "number")(

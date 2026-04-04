@@ -417,6 +417,23 @@ object Evaluator:
           parseMulRest(combined, remaining)
         case _ => (left, items)
 
+    def applyFunction(fname: String, bg: MathExpr[A]): EvalResult[A] =
+      val argResult = evalImpl(bg, env)
+      argResult match
+        case Numeric(a) =>
+          fname match
+            case "sin"  => Numeric(alg.sin(a))
+            case "cos"  => Numeric(alg.cos(a))
+            case "tan"  => Numeric(alg.tan(a))
+            case "exp"  => Numeric(alg.exp(a))
+            case "log"  => Numeric(alg.log(a))
+            case "sqrt" => Numeric(alg.sqrt(a))
+            case other  => EvalError(s"Unsupported function: $other")
+        case e: EvalError => e
+        case _            => EvalError(s"Unsupported function call: $fname")
+      end match
+    end applyFunction
+
     def parsePrimary(items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       items match
         case Nil                   => (EvalError("Unexpected end of expression"), Nil)
@@ -427,38 +444,11 @@ object Evaluator:
             case e: EvalError => e
             case _            => EvalError("Cannot negate")
           (negated, remaining)
-        // Function application: Operator("sin") followed by BracketGroup("(",")", arg)
+        // Function application: Operator("sin") or Symbol("sin") followed by BracketGroup("(",")", arg)
         case Operator(fname) :: (bg @ BracketGroup("(", ")", _)) :: rest if knownFunctions.contains(fname) =>
-          val argResult = evalImpl(bg, env)
-          val applied = argResult match
-            case Numeric(a) =>
-              fname match
-                case "sin"  => Numeric(alg.sin(a))
-                case "cos"  => Numeric(alg.cos(a))
-                case "tan"  => Numeric(alg.tan(a))
-                case "exp"  => Numeric(alg.exp(a))
-                case "log"  => Numeric(alg.log(a))
-                case "sqrt" => Numeric(alg.sqrt(a))
-                case other  => EvalError(s"Unsupported function: $other")
-            case e: EvalError => e
-            case _            => EvalError(s"Unsupported function call: $fname")
-          (applied, rest)
-        // Symbol-based function application: Symbol("f") followed by BracketGroup
+          (applyFunction(fname, bg), rest)
         case Symbol(fname) :: (bg @ BracketGroup("(", ")", _)) :: rest if knownFunctions.contains(fname) =>
-          val argResult = evalImpl(bg, env)
-          val applied = argResult match
-            case Numeric(a) =>
-              fname match
-                case "sin"  => Numeric(alg.sin(a))
-                case "cos"  => Numeric(alg.cos(a))
-                case "tan"  => Numeric(alg.tan(a))
-                case "exp"  => Numeric(alg.exp(a))
-                case "log"  => Numeric(alg.log(a))
-                case "sqrt" => Numeric(alg.sqrt(a))
-                case other  => EvalError(s"Unsupported function: $other")
-            case e: EvalError => e
-            case _            => EvalError(s"Unsupported function call: $fname")
-          (applied, rest)
+          (applyFunction(fname, bg), rest)
         case expr :: rest => (evalImpl(expr, env), rest)
 
     val (result, remaining) = parseAdd(exprs)
