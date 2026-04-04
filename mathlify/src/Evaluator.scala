@@ -28,10 +28,11 @@ object Evaluator:
     case MathVector(elems)                                => elems.flatMap(freeVars).toSet
     case Matrix(elems, _, _, _, _, _)                     => elems.flatMap(freeVars).toSet
     case Subscript(Symbol(base), Number(n))               =>
-      // Subscript variables like x_1 are named by their Double index.
-      (n: Any) match
-        case d: Double => Set(s"${base}_${d.round.toInt}")
-        case _         => freeVars(Symbol(base))
+      // Subscript variables (e.g. x_1) are named by a Double integer index.
+      // This function is generic in A; we use a runtime type-check so that
+      // non-Double subscripts fall back to treating the base symbol as free.
+      if n.isInstanceOf[Double] then Set(s"${base}_${n.asInstanceOf[Double].round.toInt}")
+      else freeVars(Symbol(base))
     case Subscript(b, s)   => freeVars(b) ++ freeVars(s)
     case Superscript(b, s) => freeVars(b) ++ freeVars(s)
     case Operator(_)       => Set.empty
@@ -236,6 +237,8 @@ object Evaluator:
   )(using alg: MathTrig[A]): EvalResult[A] = expr match
     case Number(n)      => Numeric(n)
     case Constant(name) =>
+      // Constants are lifted via fromDouble as required by MathRing; this is
+      // the standard bridge from well-known real values to arbitrary numeric types.
       name match
         case "pi" | "π" => Numeric(alg.fromDouble(math.Pi))
         case "e"        => Numeric(alg.fromDouble(math.E))
@@ -312,15 +315,16 @@ object Evaluator:
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Root")
     case Subscript(Symbol(base), Number(n)) =>
-      // Subscript variables like x_1 are looked up by their Double index key.
-      (n: Any) match
-        case d: Double =>
-          val key = s"${base}_${d.round.toInt}"
-          env.get(key) match
-            case Some(v) => Numeric(v)
-            case None    => EvalError(s"Unbound variable: $key")
-          end match
-        case _ => EvalError(s"Cannot evaluate subscript with non-numeric index")
+      // Subscript variables (e.g. x_1) are looked up by a Double integer key.
+      // This evaluator is generic in A; we use a runtime type-check so that
+      // non-Double subscripts produce a clear error rather than a crash.
+      if n.isInstanceOf[Double] then
+        val key = s"${base}_${n.asInstanceOf[Double].round.toInt}"
+        env.get(key) match
+          case Some(v) => Numeric(v)
+          case None    => EvalError(s"Unbound variable: $key")
+        end match
+      else EvalError(s"Cannot evaluate subscript with non-Double index: ${n.getClass.getSimpleName}")
     case Group(e)              => evalImpl(e, env)
     case BracketGroup(_, _, c) => evalImpl(c, env)
     case Fraction(n, d)        =>
