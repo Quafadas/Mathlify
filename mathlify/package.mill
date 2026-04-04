@@ -13,9 +13,10 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     build.V.fastparse,
     build.V.spire
   )
-  // Add JS-only sources (MathMLCompiler, LaminarRenderer)
+  // Add JS-only sources (MathMLCompiler, LaminarRenderer) and JVM+JS sources (ForwardDiff)
   def jsSources = Task.Sources(moduleDir / "src-js")
-  override def sources = Task(super.sources() ++ jsSources())
+  def jvmJsSources = Task.Sources(moduleDir / "src-jvm-js")
+  override def sources = Task(super.sources() ++ jsSources() ++ jvmJsSources())
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:
     def scalaVersion = build.V.scalaVersion
