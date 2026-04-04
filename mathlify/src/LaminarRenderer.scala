@@ -3,7 +3,7 @@ package mathlify
 import com.raquo.laminar.api.L.*
 
 object LaminarRenderer:
-  def render(expr: Signal[MathExpr]): HtmlElement =
+  def render(expr: Signal[MathExpr[Double]]): HtmlElement =
     div(
       onMountCallback { ctx =>
         expr.foreach { e =>
@@ -15,7 +15,7 @@ object LaminarRenderer:
       }
     )
 
-  def render(expr: MathExpr): HtmlElement =
+  def render(expr: MathExpr[Double]): HtmlElement =
     div(
       onMountCallback { ctx =>
         val el = ctx.thisNode.ref

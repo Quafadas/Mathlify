@@ -20,7 +20,7 @@ object AsciiMath:
 
   // ── Public entry point ───────────────────────────────────────────────────
 
-  def translate(input: String): Either[String, MathExpr] =
+  def translate(input: String): Either[String, MathExpr[Double]] =
     val (exprs, _) = parseExpr(input.trim, rightbracket = false, depth = 0)
     Right(exprs match
       case Nil     => Symbol("")
@@ -34,9 +34,9 @@ object AsciiMath:
       str: String,
       rightbracket: Boolean,
       depth: Int
-  ): (List[MathExpr], String) =
+  ): (List[MathExpr[Double]], String) =
     var current = str
-    var result = List.empty[MathExpr]
+    var result = List.empty[MathExpr[Double]]
     var continue = true
     while continue do
       current = skipWS(current)
@@ -71,7 +71,7 @@ object AsciiMath:
 
   // ── Grammar: I -> S (_ S (^ S)? | ^ S (_ S)?)?  ─────────────────────────
 
-  private def parseIexpr(str: String, depth: Int): (Option[MathExpr], String) =
+  private def parseIexpr(str: String, depth: Int): (Option[MathExpr[Double]], String) =
     val sym1Opt = getSymbol(skipWS(str))
     val (nodeOpt, rest0) = parseSexpr(str, depth)
     nodeOpt match
@@ -130,7 +130,7 @@ object AsciiMath:
 
   // ── Grammar: S -> atom | unary(S) | binary(S)(S) | (E) | text  ──────────
 
-  private def parseSexpr(str: String, depth: Int): (Option[MathExpr], String) =
+  private def parseSexpr(str: String, depth: Int): (Option[MathExpr[Double]], String) =
     val s = skipWS(str)
     if s.isEmpty then return (None, s)
     end if
@@ -248,10 +248,10 @@ object AsciiMath:
 
   // ── Matrix detection helpers ─────────────────────────────────────────────
 
-  private def splitRowByCols(row: MathExpr): List[MathExpr] =
+  private def splitRowByCols(row: MathExpr[Double]): List[MathExpr[Double]] =
     row match
       case ExprSeq(elems) =>
-        val (cols, last) = elems.foldLeft((List.empty[MathExpr], List.empty[MathExpr])) {
+        val (cols, last) = elems.foldLeft((List.empty[MathExpr[Double]], List.empty[MathExpr[Double]])) {
           case ((cols, current), Operator(",")) =>
             val cell = current match
               case List(single) => single
@@ -268,16 +268,16 @@ object AsciiMath:
         cols :+ lastCell
       case other => List(other)
 
-  private def tryBuildMatrix(inner: MathExpr): Option[Matrix] =
+  private def tryBuildMatrix(inner: MathExpr[Double]): Option[Matrix[Double]] =
     inner match
       case ExprSeq(elems) =>
         @annotation.tailrec
         def extractRows(
             open: String,
             close: String,
-            remaining: List[MathExpr],
-            acc: List[MathExpr]
-        ): Option[List[MathExpr]] =
+            remaining: List[MathExpr[Double]],
+            acc: List[MathExpr[Double]]
+        ): Option[List[MathExpr[Double]]] =
           remaining match
             case Nil                                              => Some(acc)
             case BracketGroup(`open`, `close`, rowContent) :: Nil =>
@@ -300,7 +300,7 @@ object AsciiMath:
 
   // ── Unary builder ────────────────────────────────────────────────────────
 
-  private def buildUnary(sym: AMSym, rawArg: MathExpr): MathExpr =
+  private def buildUnary(sym: AMSym, rawArg: MathExpr[Double]): MathExpr[Double] =
     val arg = stripBrackets(rawArg)
     sym.rewriteleftright match
       case Some((l, r)) => BracketGroup(l, r, arg)
@@ -318,7 +318,7 @@ object AsciiMath:
 
   // ── Binary builder ───────────────────────────────────────────────────────
 
-  private def buildBinary(sym: AMSym, arg1: MathExpr, arg2: MathExpr): MathExpr =
+  private def buildBinary(sym: AMSym, arg1: MathExpr[Double], arg2: MathExpr[Double]): MathExpr[Double] =
     sym.input match
       case "root"                 => Root(Some(arg1), arg2)
       case "frac"                 => Fraction(arg1, arg2)
@@ -329,20 +329,20 @@ object AsciiMath:
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  private def stripBrackets(expr: MathExpr): MathExpr = expr match
+  private def stripBrackets(expr: MathExpr[Double]): MathExpr[Double] = expr match
     case BracketGroup("(", ")", inner) => inner
     case BracketGroup("[", "]", inner) => inner
     case BracketGroup("{", "}", inner) => inner
     case other                         => other
 
-  private def extractText(expr: MathExpr): String = expr match
+  private def extractText(expr: MathExpr[Double]): String = expr match
     case Symbol(n)   => n
     case Operator(s) => s
     case Number(v)   => if v % 1 == 0 then v.toLong.toString else v.toString
     case ExprSeq(es) => es.map(extractText).mkString
     case _           => ""
 
-  private def getNumberOrChar(str: String): Option[(MathExpr, String)] =
+  private def getNumberOrChar(str: String): Option[(MathExpr[Double], String)] =
     if str.isEmpty then None
     else
       val c = str.head

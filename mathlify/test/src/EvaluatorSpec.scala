@@ -8,12 +8,12 @@ class EvaluatorSpec extends AnyFunSuite:
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private def assertNumeric(result: EvalResult, expected: Double, tol: Double = 1e-9): Unit =
+  private def assertNumeric(result: EvalResult[Double], expected: Double, tol: Double = 1e-9): Unit =
     result match
       case Numeric(v) => assert(math.abs(v - expected) <= tol, s"expected $expected but got $v")
       case other      => fail(s"expected Numeric($expected) but got $other")
 
-  private def assertError(result: EvalResult): Unit =
+  private def assertError(result: EvalResult[Double]): Unit =
     assert(result.isInstanceOf[EvalError], s"expected EvalError but got $result")
 
   // ── 1. Free variable analysis ─────────────────────────────────────────────

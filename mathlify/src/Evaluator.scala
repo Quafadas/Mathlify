@@ -2,12 +2,13 @@ package mathlify
 
 import MathExpr.*
 import scala.math
+import scala.annotation.targetName
 
 object Evaluator:
 
   // ── Free variable analysis ────────────────────────────────────────────────
 
-  def freeVars(expr: MathExpr): Set[String] = expr match
+  def freeVars[A](expr: MathExpr[A]): Set[String] = expr match
     case Number(_)                                        => Set.empty
     case Constant(_)                                      => Set.empty
     case Symbol(name) if symbolicConstants.contains(name) => Set.empty
@@ -26,12 +27,17 @@ object Evaluator:
     case Group(e)                                         => freeVars(e)
     case MathVector(elems)                                => elems.flatMap(freeVars).toSet
     case Matrix(elems, _, _, _, _, _)                     => elems.flatMap(freeVars).toSet
-    case Subscript(Symbol(base), Number(n))               => Set(s"${base}_${n.round.toInt}")
-    case Subscript(b, s)                                  => freeVars(b) ++ freeVars(s)
-    case Superscript(b, s)                                => freeVars(b) ++ freeVars(s)
-    case Operator(_)                                      => Set.empty
-    case ExprSeq(exprs)                                   =>
-      def goSeq(items: List[MathExpr]): Set[String] = items match
+    case Subscript(Symbol(base), Number(n))               =>
+      // Subscript variables (e.g. x_1) are named by a Double integer index.
+      // This function is generic in A; we use a runtime type-check so that
+      // non-Double subscripts fall back to treating the base symbol as free.
+      if n.isInstanceOf[Double] then Set(s"${base}_${n.asInstanceOf[Double].round.toInt}")
+      else freeVars(Symbol(base))
+    case Subscript(b, s)   => freeVars(b) ++ freeVars(s)
+    case Superscript(b, s) => freeVars(b) ++ freeVars(s)
+    case Operator(_)       => Set.empty
+    case ExprSeq(exprs)    =>
+      def goSeq(items: List[MathExpr[A]]): Set[String] = items match
         case Nil                                                   => Set.empty
         case Symbol(_) :: (bg @ BracketGroup("(", ")", _)) :: rest =>
           // Symbol followed by ( ) is a function application: the function name
@@ -48,18 +54,18 @@ object Evaluator:
     case Enclose(_, c)         => freeVars(c)
     case Color(_, c)           => freeVars(c)
 
-  def isClosed(expr: MathExpr): Boolean =
+  def isClosed[A](expr: MathExpr[A]): Boolean =
     freeVars(expr).isEmpty
 
-  def unboundVars(expr: MathExpr, env: Map[String, Double] = Map.empty): Set[String] =
+  def unboundVars[A](expr: MathExpr[A], env: Map[String, A] = Map.empty): Set[String] =
     freeVars(expr) -- env.keySet
 
-  def isEvaluable(expr: MathExpr, env: Map[String, Double]): Boolean =
+  def isEvaluable[A](expr: MathExpr[A], env: Map[String, A]): Boolean =
     freeVars(expr).subsetOf(env.keySet)
 
-  // ── Constant folding ──────────────────────────────────────────────────────
+  // ── Constant folding (Double-only) ────────────────────────────────────────
 
-  def foldConstants(expr: MathExpr): MathExpr = expr match
+  def foldConstants(expr: MathExpr[Double]): MathExpr[Double] = expr match
     case Add(l, r) =>
       (foldConstants(l), foldConstants(r)) match
         case (Number(a), Number(b))             => Number(a + b)
@@ -131,21 +137,21 @@ object Evaluator:
       end match
     case other => other
 
-  // ── Symbolic constant substitution ───────────────────────────────────────
+  // ── Symbolic constant substitution (Double-only) ──────────────────────────
 
-  // Well-known constants that AsciiMath emits as Symbol nodes (e.g. "pi" → Symbol("π")).
+  // Well-known constants that AsciiMath emits as Symbol nodes (e.g. "pi" -> Symbol("pi")).
   private val symbolicConstants: Map[String, Double] = Map(
     "π" -> math.Pi,
     "e" -> math.E
   )
 
-  // Well-known constants emitted as Operator nodes (e.g. "infty" → Operator("∞")).
+  // Well-known constants emitted as Operator nodes (e.g. "infty" -> Operator("inf")).
   private val operatorConstants: Map[String, Double] = Map(
     "∞" -> Double.PositiveInfinity
   )
 
   /** Replace known symbolic/operator constant tokens with their numeric values. */
-  private def substituteConstants(expr: MathExpr): MathExpr = expr match
+  private def substituteConstants(expr: MathExpr[Double]): MathExpr[Double] = expr match
     case Symbol(n) if symbolicConstants.contains(n)   => Number(symbolicConstants(n))
     case Operator(s) if operatorConstants.contains(s) => Number(operatorConstants(s))
     case Add(l, r)                                    => Add(substituteConstants(l), substituteConstants(r))
@@ -166,13 +172,7 @@ object Evaluator:
     case SubSup(b, s, sup)                            => SubSup(substituteConstants(b), substituteConstants(s), substituteConstants(sup))
     case other                                        => other
 
-  /** Parse an AsciiMath string and evaluate it to a constant Double if possible.
-    *
-    * Recognises well-known mathematical constants (π, e, ∞) in addition to numeric literals and arithmetic, so expressions such as "pi", "2*pi", "e^2" and "sqrt(2)" are accepted.
-    *
-    * @return
-    *   Some(value) when the expression is a closed constant expression, None when the expression contains free variables or cannot be evaluated numerically.
-    */
+  /** Parse an AsciiMath string and evaluate it to a constant Double if possible. */
   def parseConstant(input: String): Option[Double] =
     AsciiMath.translate(input.trim) match
       case Left(_)     => None
@@ -183,138 +183,181 @@ object Evaluator:
 
   // ── Full evaluation ───────────────────────────────────────────────────────
 
-  def eval(expr: MathExpr, env: Map[String, Double] = Map.empty): EvalResult =
+  /** Evaluate a Double expression with constant folding and symbolic constant substitution. */
+  def eval(
+      expr: MathExpr[Double],
+      env: Map[String, Double] = Map.empty
+  )(using alg: MathTrig[Double]): EvalResult[Double] =
     val folded = foldConstants(substituteConstants(expr))
     if !isEvaluable(folded, env) then EvalError(s"Unbound variables: ${(freeVars(folded) -- env.keySet).mkString(", ")}")
-    else evaluateNumeric(folded, env)
+    else evalImpl(folded, env)
+    end if
+  end eval
+
+  /** Evaluate a generic expression under the given algebra. */
+  @targetName("evalGeneric")
+  def eval[A](
+      expr: MathExpr[A],
+      env: Map[String, A]
+  )(using alg: MathTrig[A]): EvalResult[A] =
+    if !isEvaluable(expr, env) then EvalError(s"Unbound variables: ${(freeVars(expr) -- env.keySet).mkString(", ")}")
+    else evalImpl(expr, env)
     end if
   end eval
 
   // ── Partial evaluation ────────────────────────────────────────────────────
 
-  def partialEval(expr: MathExpr, env: Map[String, Double] = Map.empty): EvalResult =
+  /** Partially evaluate a Double expression with constant folding and symbolic constant substitution. */
+  def partialEval(
+      expr: MathExpr[Double],
+      env: Map[String, Double] = Map.empty
+  )(using alg: MathTrig[Double]): EvalResult[Double] =
     val folded = foldConstants(substituteConstants(expr))
-    if isEvaluable(folded, env) then evaluateNumeric(folded, env)
+    if isEvaluable(folded, env) then evalImpl(folded, env)
     else PartiallyReduced(folded)
     end if
   end partialEval
 
-  // ── Internal numeric evaluator ────────────────────────────────────────────
+  /** Partially evaluate a generic expression under the given algebra. */
+  @targetName("partialEvalGeneric")
+  def partialEval[A](
+      expr: MathExpr[A],
+      env: Map[String, A]
+  )(using alg: MathTrig[A]): EvalResult[A] =
+    if isEvaluable(expr, env) then evalImpl(expr, env)
+    else PartiallyReduced(expr)
+    end if
+  end partialEval
 
-  private def evaluateNumeric(
-      expr: MathExpr,
-      env: Map[String, Double]
-  ): EvalResult = expr match
+  // ── Generic evaluator ─────────────────────────────────────────────────────
+
+  private def evalImpl[A](
+      expr: MathExpr[A],
+      env: Map[String, A]
+  )(using alg: MathTrig[A]): EvalResult[A] = expr match
     case Number(n)      => Numeric(n)
     case Constant(name) =>
+      // Constants are lifted via fromDouble as required by MathRing; this is
+      // the standard bridge from well-known real values to arbitrary numeric types.
       name match
-        case "pi" | "π" => Numeric(math.Pi)
-        case "e"        => Numeric(math.E)
+        case "pi" | "π" => Numeric(alg.fromDouble(math.Pi))
+        case "e"        => Numeric(alg.fromDouble(math.E))
         case other      => EvalError(s"Unknown constant: $other")
     case Symbol(name) =>
       env.get(name) match
         case Some(v) => Numeric(v)
         case None    => EvalError(s"Unbound variable: $name")
     case Add(l, r) =>
-      (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
-        case (Numeric(a), Numeric(b)) => Numeric(a + b)
+      (evalImpl(l, env), evalImpl(r, env)) match
+        case (Numeric(a), Numeric(b)) => Numeric(alg.plus(a, b))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Add")
     case Sub(l, r) =>
-      (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
-        case (Numeric(a), Numeric(b)) => Numeric(a - b)
+      (evalImpl(l, env), evalImpl(r, env)) match
+        case (Numeric(a), Numeric(b)) => Numeric(alg.minus(a, b))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Sub")
     case Mul(l, r) =>
-      (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
-        case (Numeric(a), Numeric(b)) => Numeric(a * b)
+      (evalImpl(l, env), evalImpl(r, env)) match
+        case (Numeric(a), Numeric(b)) => Numeric(alg.times(a, b))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Mul")
     case Div(l, r) =>
-      (evaluateNumeric(l, env), evaluateNumeric(r, env)) match
+      (evalImpl(l, env), evalImpl(r, env)) match
         case (Numeric(a), Numeric(b)) =>
-          if b == 0.0 then EvalError("Division by zero")
-          else Numeric(a / b)
+          if b == alg.zero then EvalError("Division by zero")
+          else Numeric(alg.div(a, b))
         case (e: EvalError, _) => e
         case (_, e: EvalError) => e
         case _                 => EvalError("Unexpected partial result in Div")
     case Pow(b, e) =>
-      (evaluateNumeric(b, env), evaluateNumeric(e, env)) match
-        case (Numeric(a), Numeric(n)) => Numeric(math.pow(a, n))
+      (evalImpl(b, env), evalImpl(e, env)) match
+        case (Numeric(a), Numeric(n)) => Numeric(alg.pow(a, n))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Pow")
     case Superscript(b, e) =>
-      (evaluateNumeric(b, env), evaluateNumeric(e, env)) match
-        case (Numeric(a), Numeric(n)) => Numeric(math.pow(a, n))
+      (evalImpl(b, env), evalImpl(e, env)) match
+        case (Numeric(a), Numeric(n)) => Numeric(alg.pow(a, n))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Superscript")
     case Neg(e) =>
-      evaluateNumeric(e, env) match
-        case Numeric(a)   => Numeric(-a)
+      evalImpl(e, env) match
+        case Numeric(a)   => Numeric(alg.negate(a))
         case e: EvalError => e
         case _            => EvalError("Unexpected partial result in Neg")
     case FunctionCall(name, args) =>
-      args.map(a => evaluateNumeric(a, env)) match
+      args.map(a => evalImpl(a, env)) match
         case List(Numeric(a)) =>
           name match
-            case "sin" => Numeric(math.sin(a))
-            case "cos" => Numeric(math.cos(a))
-            case "exp" => Numeric(math.exp(a))
-            case "log" => Numeric(math.log(a))
-            case other => EvalError(s"Unsupported function: $other")
+            case "sin"  => Numeric(alg.sin(a))
+            case "cos"  => Numeric(alg.cos(a))
+            case "tan"  => Numeric(alg.tan(a))
+            case "exp"  => Numeric(alg.exp(a))
+            case "log"  => Numeric(alg.log(a))
+            case "sqrt" => Numeric(alg.sqrt(a))
+            case other  => EvalError(s"Unsupported function: $other")
         case List(e: EvalError) => e
         case _                  => EvalError(s"Unsupported function call: $name")
     case Root(None, rad) =>
-      evaluateNumeric(rad, env) match
-        case Numeric(a)   => Numeric(math.sqrt(a))
+      evalImpl(rad, env) match
+        case Numeric(a)   => Numeric(alg.sqrt(a))
         case e: EvalError => e
         case _            => EvalError("Unexpected partial result in Root")
     case Root(Some(deg), rad) =>
-      (evaluateNumeric(deg, env), evaluateNumeric(rad, env)) match
-        case (Numeric(d), Numeric(a)) => Numeric(math.pow(a, 1.0 / d))
+      (evalImpl(deg, env), evalImpl(rad, env)) match
+        case (Numeric(d), Numeric(a)) => Numeric(alg.pow(a, alg.div(alg.one, d)))
         case (e: EvalError, _)        => e
         case (_, e: EvalError)        => e
         case _                        => EvalError("Unexpected partial result in Root")
     case Subscript(Symbol(base), Number(n)) =>
-      val key = s"${base}_${n.round.toInt}"
-      env.get(key) match
-        case Some(v) => Numeric(v)
-        case None    => EvalError(s"Unbound variable: $key")
-      end match
-    case Group(e)              => evaluateNumeric(e, env)
-    case BracketGroup(_, _, c) => evaluateNumeric(c, env)
+      // Subscript variables (e.g. x_1) are looked up by a Double integer key.
+      // This evaluator is generic in A; we use a runtime type-check so that
+      // non-Double subscripts produce a clear error rather than a crash.
+      if n.isInstanceOf[Double] then
+        val key = s"${base}_${n.asInstanceOf[Double].round.toInt}"
+        env.get(key) match
+          case Some(v) => Numeric(v)
+          case None    => EvalError(s"Unbound variable: $key")
+        end match
+      else EvalError(s"Cannot evaluate subscript with non-Double index: ${n.getClass.getSimpleName}")
+    case Group(e)              => evalImpl(e, env)
+    case BracketGroup(_, _, c) => evalImpl(c, env)
     case Fraction(n, d)        =>
-      (evaluateNumeric(n, env), evaluateNumeric(d, env)) match
+      (evalImpl(n, env), evalImpl(d, env)) match
         case (Numeric(a), Numeric(b)) =>
-          if b == 0.0 then EvalError("Division by zero")
-          else Numeric(a / b)
+          if b == alg.zero then EvalError("Division by zero")
+          else Numeric(alg.div(a, b))
         case (e: EvalError, _) => e
         case (_, e: EvalError) => e
         case _                 => EvalError("Unexpected partial result in Fraction")
-    case ExprSeq(exprs) => evalInfixSeq(exprs, env)
-    case other          => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
+    case ExprSeq(exprs)   => evalInfixSeqImpl(exprs, env)
+    case _: MathVector[?] => EvalError("Cannot evaluate MathVector node to a scalar")
+    case _: Matrix[?]     => EvalError("Cannot evaluate Matrix node to a scalar")
+    case other            => EvalError(s"Cannot evaluate: ${other.getClass.getSimpleName}")
 
-  // ── ExprSeq infix evaluator with precedence ───────────────────────────────
+  // ── Generic ExprSeq infix evaluator ──────────────────────────────────────
 
-  private def evalInfixSeq(exprs: List[MathExpr], env: Map[String, Double]): EvalResult =
+  private def evalInfixSeqImpl[A](
+      exprs: List[MathExpr[A]],
+      env: Map[String, A]
+  )(using alg: MathTrig[A]): EvalResult[A] =
 
-    // Additive: term (('+' | '-') term)*
-    def parseAdd(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+    def parseAdd(items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       val (lv, rest) = parseMul(items)
       parseAddRest(lv, rest)
     end parseAdd
 
-    def parseAddRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+    def parseAddRest(left: EvalResult[A], items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       items match
         case Operator("+") :: rest =>
           val (rv, remaining) = parseMul(rest)
           val combined = (left, rv) match
-            case (Numeric(a), Numeric(b)) => Numeric(a + b)
+            case (Numeric(a), Numeric(b)) => Numeric(alg.plus(a, b))
             case (e: EvalError, _)        => e
             case (_, e: EvalError)        => e
             case _                        => EvalError("Cannot add")
@@ -322,29 +365,27 @@ object Evaluator:
         case Operator("-") :: rest =>
           val (rv, remaining) = parseMul(rest)
           val combined = (left, rv) match
-            case (Numeric(a), Numeric(b)) => Numeric(a - b)
+            case (Numeric(a), Numeric(b)) => Numeric(alg.minus(a, b))
             case (e: EvalError, _)        => e
             case (_, e: EvalError)        => e
             case _                        => EvalError("Cannot subtract")
           parseAddRest(combined, remaining)
         case Operator("=") :: rest =>
-          // For function definition equations (e.g. f(x) = expr), evaluate the RHS.
           val (rv, remaining) = parseAdd(rest)
           (rv, remaining)
         case _ => (left, items)
 
-    // Multiplicative: primary (('⋅' | '×' | '/') primary)*
-    def parseMul(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+    def parseMul(items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       val (lv, rest) = parsePrimary(items)
       parseMulRest(lv, rest)
     end parseMul
 
-    def parseMulRest(left: EvalResult, items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+    def parseMulRest(left: EvalResult[A], items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       items match
         case Operator(op) :: rest if op == "⋅" || op == "×" || op == "*" =>
           val (rv, remaining) = parsePrimary(rest)
           val combined = (left, rv) match
-            case (Numeric(a), Numeric(b)) => Numeric(a * b)
+            case (Numeric(a), Numeric(b)) => Numeric(alg.times(a, b))
             case (e: EvalError, _)        => e
             case (_, e: EvalError)        => e
             case _                        => EvalError("Cannot multiply")
@@ -353,52 +394,46 @@ object Evaluator:
           val (rv, remaining) = parsePrimary(rest)
           val combined = (left, rv) match
             case (Numeric(a), Numeric(b)) =>
-              if b == 0.0 then EvalError("Division by zero")
-              else Numeric(a / b)
+              if b == alg.zero then EvalError("Division by zero")
+              else Numeric(alg.div(a, b))
             case (e: EvalError, _) => e
             case (_, e: EvalError) => e
             case _                 => EvalError("Cannot divide")
           parseMulRest(combined, remaining)
         case (head :: _) if !head.isInstanceOf[Operator] =>
-          // Implicit multiplication: two adjacent non-operator terms (e.g. 5x)
           val (rv, remaining) = parsePrimary(items)
           val combined = (left, rv) match
-            case (Numeric(a), Numeric(b)) => Numeric(a * b)
+            case (Numeric(a), Numeric(b)) => Numeric(alg.times(a, b))
             case (e: EvalError, _)        => e
             case (_, e: EvalError)        => e
             case _                        => EvalError("Cannot multiply (implicit)")
           parseMulRest(combined, remaining)
         case _ => (left, items)
 
-    // Primary: optional unary '-' then a single MathExpr
-    def parsePrimary(items: List[MathExpr]): (EvalResult, List[MathExpr]) =
+    def parsePrimary(items: List[MathExpr[A]]): (EvalResult[A], List[MathExpr[A]]) =
       items match
         case Nil                   => (EvalError("Unexpected end of expression"), Nil)
         case Operator("-") :: rest =>
           val (v, remaining) = parsePrimary(rest)
           val negated = v match
-            case Numeric(a)   => Numeric(-a)
+            case Numeric(a)   => Numeric(alg.negate(a))
             case e: EvalError => e
             case _            => EvalError("Cannot negate")
           (negated, remaining)
-        case expr :: rest => (evaluateNumeric(expr, env), rest)
+        case expr :: rest => (evalImpl(expr, env), rest)
 
     val (result, remaining) = parseAdd(exprs)
     if remaining.nonEmpty then EvalError(s"Unexpected elements in ExprSeq: ${remaining.map(_.getClass.getSimpleName).mkString(", ")}")
     else result
     end if
-  end evalInfixSeq
+  end evalInfixSeqImpl
 
-  // ── ExprSeq constant simplification ──────────────────────────────────────
+  // ── ExprSeq constant simplification (Double-only) ────────────────────────
 
-  private def simplifyExprSeq(exprs: List[MathExpr]): List[MathExpr] =
-    // Split the flat infix sequence at top-level + and - operators into
-    // additive segments: (leadingOp: Option[String], terms: List[MathExpr]).
-    // leadingOp is None for the first segment, Some("+") / Some("-") for the rest.
-    // Build lists by prepending and reversing to avoid O(n²) appends.
-    var segmentsRev = List.empty[(Option[String], List[MathExpr])]
+  private def simplifyExprSeq(exprs: List[MathExpr[Double]]): List[MathExpr[Double]] =
+    var segmentsRev = List.empty[(Option[String], List[MathExpr[Double]])]
     var currentOp: Option[String] = None
-    var currentTermsRev: List[MathExpr] = Nil
+    var currentTermsRev: List[MathExpr[Double]] = Nil
 
     def flush(): Unit =
       if currentTermsRev.nonEmpty then
@@ -413,29 +448,27 @@ object Evaluator:
     flush()
     val segments = segmentsRev.reverse
 
-    // For each segment, attempt evaluation if it contains no free variables.
-    val evaluated: List[(Option[String], Either[Double, List[MathExpr]])] =
+    val evaluated: List[(Option[String], Either[Double, List[MathExpr[Double]]])] =
       segments.map { case (op, terms) =>
         if terms.exists(e => freeVars(e).nonEmpty) then (op, Right(terms))
         else
-          evalInfixSeq(terms, Map.empty) match
+          evalInfixSeqImpl(terms, Map.empty) match
             case Numeric(v) => (op, Left(v))
             case _          => (op, Right(terms))
       }
 
-    // Merge consecutive constant segments by summing their signed values.
     @annotation.tailrec
     def mergeConsts(
-        items: List[(Option[String], Either[Double, List[MathExpr]])],
-        acc: List[(Option[String], Either[Double, List[MathExpr]])]
-    ): List[(Option[String], Either[Double, List[MathExpr]])] =
+        items: List[(Option[String], Either[Double, List[MathExpr[Double]]])],
+        acc: List[(Option[String], Either[Double, List[MathExpr[Double]]])]
+    ): List[(Option[String], Either[Double, List[MathExpr[Double]]])] =
       items match
         case Nil                                        => acc.reverse
         case (op1, Left(v1)) :: (op2, Left(v2)) :: rest =>
           val s1 = if op1.contains("-") then -v1 else v1
           val s2 = if op2.contains("-") then -v2 else v2
           val total = s1 + s2
-          val merged: (Option[String], Either[Double, List[MathExpr]]) = op1 match
+          val merged: (Option[String], Either[Double, List[MathExpr[Double]]]) = op1 match
             case None    => (None, Left(total))
             case Some(_) => if total >= 0 then (Some("+"), Left(total)) else (Some("-"), Left(-total))
           mergeConsts(merged :: rest, acc)
@@ -443,7 +476,6 @@ object Evaluator:
 
     val merged = mergeConsts(evaluated, Nil)
 
-    // Reassemble into a flat list of MathExpr tokens.
     merged.flatMap {
       case (None, Left(v))          => List(Number(v))
       case (Some("+"), Left(v))     => List(Operator("+"), Number(v))
