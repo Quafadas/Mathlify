@@ -199,7 +199,7 @@ object AutoDiffPage:
       case Left(_)     => mathlify.EvalError("Parse error")
 
     val (fValue, fDeriv) = result match
-      case mathlify.Numeric(d)   => (fmt(d.value), fmt(d.deriv))
+      case mathlify.Numeric(j)   => (fmt(j.real), fmt(j.infinitesimal(0)))
       case mathlify.EvalError(m) => (s"Error: $m", "Error")
       case _                     => ("N/A", "N/A")
 
@@ -346,11 +346,11 @@ object AutoDiffPage:
                       ): HtmlElement
                     else
                       mathlify.ForwardDiff.differentiate(expr, vars, wrt) match
-                        case mathlify.Numeric(d) =>
+                        case mathlify.Numeric(j) =>
                           Callout(_.variant := "success")(
                             cls := "derivative-result",
-                            div(cls := "result-row", span("f = "), strong(cls := "numeric-result", fmt(d.value))),
-                            div(cls := "result-row", span(s"∂f/∂$wrt = "), strong(cls := "numeric-result", fmt(d.deriv)))
+                            div(cls := "result-row", span("f = "), strong(cls := "numeric-result", fmt(j.real))),
+                            div(cls := "result-row", span(s"∂f/∂$wrt = "), strong(cls := "numeric-result", fmt(j.infinitesimal(0))))
                           ): HtmlElement
                         case mathlify.EvalError(msg) =>
                           Callout(_.variant := "danger")(s"Error: $msg"): HtmlElement

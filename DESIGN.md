@@ -6,15 +6,21 @@ This document describes the design of a new **Forward Mode Automatic Differentia
 for the Mathlify example app, closing issue #45. The page teaches students how forward-mode AD
 works through theory, worked examples, and an interactive evaluator.
 
+The implementation uses **Spire** (`org.typelevel::spire::0.18.0`), specifically its `Jet[Double]`
+dual number type, as specified in the issue title "(via spire)".
+
 ---
 
 ## 1. Design
 
-### 1.1 Core Library: `ForwardDiff` module
+### 1.1 Core Library: `ForwardDiff` module (via Spire)
 
 Forward-mode AD works by augmenting every value with its derivative (a *dual number*).
-A dual number is a pair `(value, derivative)` where arithmetic is overloaded so that
-derivatives propagate automatically through expressions.
+Spire's `Jet[Double]` provides exactly this: `Jet(real, infinitesimal)` where `real` is
+the function value and `infinitesimal(0)` is the derivative.
+
+We bridge Spire's algebra to mathlify's evaluator by providing a `given MathTrig[Jet[Double]]`
+that delegates arithmetic and transcendental operations to Spire's type class instances.
 
 **Dual number arithmetic:**
 
@@ -101,11 +107,15 @@ Similar to the existing ExpressionPage but enhanced:
 
 ### Step 1: `ForwardDiff.scala` (mathlify/src/)
 
+Uses Spire's `Jet[Double]` with `JetDim(1)` for single-variable forward-mode AD:
+
 ```
-case class Dual(value: Double, deriv: Double)
-object Dual:
-  given MathTrig[Dual] with ...
-  given MathShow[Dual] with ...
+import spire.math.{Jet, JetDim}
+
+object ForwardDiff:
+  private given JetDim = JetDim(1)
+  given MathTrig[Jet[Double]] with ...  // bridges Spire → mathlify evaluator
+  given MathShow[Jet[Double]] with ...
 ```
 
 Plus a helper function:
@@ -114,11 +124,11 @@ def differentiate(
   expr: MathExpr[Double],
   env: Map[String, Double],
   withRespectTo: String
-): EvalResult[Dual]
+): EvalResult[Jet[Double]]
 ```
 
-This seeds the target variable with `Dual(v, 1.0)` and others with `Dual(v, 0.0)`,
-then calls `Evaluator.eval[Dual](expr, dualEnv)`.
+This seeds the target variable with `Jet(v, Array(1.0))` and others with `Jet(v, Array(0.0))`,
+then calls `Evaluator.eval[Jet[Double]](expr, jetEnv)`.
 
 ### Step 2: `ForwardDiffSpec.scala` (mathlify/test/src/)
 
@@ -189,23 +199,29 @@ Playwright tests will verify:
 
 ### 3.3 Existing Tests
 
-All existing tests must continue to pass — the new `Dual` type class instance
-and page additions are purely additive and don't modify any existing code paths.
+All existing tests must continue to pass — the Spire-backed `MathTrig[Jet[Double]]` type class
+instance and page additions are purely additive and don't modify any existing code paths.
 
 ---
 
 ## 4. Design Decisions & Rationale
 
-1. **Reuse generic evaluator**: By implementing `MathTrig[Dual]`, we get automatic
+1. **Use Spire's `Jet[Double]`**: As specified in the issue title "(via spire)", we use
+   Spire's battle-tested `Jet` type for dual number arithmetic. A `MathTrig[Jet[Double]]`
+   bridges Spire's algebra to the existing mathlify evaluator, delegating `sin`, `cos`, `exp`,
+   `log`, `sqrt` etc. to Spire's type class instances.
+
+2. **Reuse generic evaluator**: By implementing `MathTrig[Jet[Double]]`, we get automatic
    differentiation "for free" through the existing `Evaluator.eval[A]`. This is
    both elegant and minimizes new code.
 
-2. **Forward mode (not reverse)**: Forward mode is simpler to explain and implement.
+3. **Forward mode (not reverse)**: Forward mode is simpler to explain and implement.
    It naturally computes one directional derivative per pass, which maps well to
    the educational goal of showing how derivatives propagate through computation.
 
-3. **Dual numbers in shared code**: `ForwardDiff.scala` lives in `mathlify/src/`
+4. **Spire in shared code**: `ForwardDiff.scala` lives in `mathlify/src/`
    (shared JVM/JS/Native) so the same differentiation logic works everywhere.
+   Spire is added as a dependency to all platform modules.
 
-4. **Page structure mirrors ExpressionPage**: Students familiar with the expression
+5. **Page structure mirrors ExpressionPage**: Students familiar with the expression
    evaluator will find the AD evaluator intuitive since it follows the same pattern.

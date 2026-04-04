@@ -1,78 +1,68 @@
 package mathlify
 
 import MathExpr.*
+import spire.math.Jet
+import spire.math.JetDim
+import spire.implicits.given
 
-/** A dual number for forward-mode automatic differentiation.
+/** Forward-mode automatic differentiation using Spire's `Jet[Double]` dual numbers.
   *
-  * A `Dual(value, deriv)` pairs a function value with its derivative, so that derivative information propagates automatically through arithmetic and transcendental operations.
+  * A `Jet[Double]` pairs a function value (`real`) with its derivative(s) (`infinitesimal`), so that derivative information propagates automatically through arithmetic and
+  * transcendental operations.
+  *
+  * We use `JetDim(1)` throughout: a single infinitesimal dimension, which suffices for computing one partial derivative per evaluation pass.
   */
-final case class Dual(value: Double, deriv: Double)
+object ForwardDiff:
 
-object Dual:
+  /** Dimension used for single-variable forward-mode AD. */
+  private given dim: JetDim = JetDim(1)
 
-  /** MathTrig instance for Dual numbers, implementing forward-mode AD rules. */
-  given MathTrig[Dual] with
-    val zero = Dual(0.0, 0.0)
-    val one = Dual(1.0, 0.0)
-    def fromLong(n: Long) = Dual(n.toDouble, 0.0)
-    def fromDouble(d: Double) = Dual(d, 0.0)
+  /** Bridge from Spire's algebra for `Jet[Double]` to mathlify's `MathTrig` type class. */
+  given MathTrig[Jet[Double]] with
+    val zero: Jet[Double] = Jet.zero[Double]
+    val one: Jet[Double] = Jet.one[Double]
+    def fromLong(n: Long): Jet[Double] = Jet(n.toDouble)
+    def fromDouble(d: Double): Jet[Double] = Jet(d)
 
-    def plus(a: Dual, b: Dual) = Dual(a.value + b.value, a.deriv + b.deriv)
-    def minus(a: Dual, b: Dual) = Dual(a.value - b.value, a.deriv - b.deriv)
-    def negate(a: Dual) = Dual(-a.value, -a.deriv)
+    def plus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a + b
+    def minus(a: Jet[Double], b: Jet[Double]): Jet[Double] = a - b
+    def times(a: Jet[Double], b: Jet[Double]): Jet[Double] = a * b
+    def negate(a: Jet[Double]): Jet[Double] = -a
+    def div(a: Jet[Double], b: Jet[Double]): Jet[Double] = a / b
 
-    // Product rule: (fg)' = f'g + fg'
-    def times(a: Dual, b: Dual) =
-      Dual(a.value * b.value, a.deriv * b.value + a.value * b.deriv)
-
-    // Quotient rule: (f/g)' = (f'g - fg') / g²
-    def div(a: Dual, b: Dual) =
-      val v = a.value / b.value
-      val d = (a.deriv * b.value - a.value * b.deriv) / (b.value * b.value)
-      Dual(v, d)
-    end div
-
-    // Power rule: (f^g)' = f^g * (g' * ln(f) + g * f'/f)
-    // Special-cased for constant exponent: (f^n)' = n * f^(n-1) * f'
-    def pow(a: Dual, b: Dual) =
-      if b.deriv == 0.0 then
-        // Constant exponent: power rule
-        val v = scala.math.pow(a.value, b.value)
-        val d = b.value * scala.math.pow(a.value, b.value - 1.0) * a.deriv
-        Dual(v, d)
+    def pow(a: Jet[Double], b: Jet[Double]): Jet[Double] =
+      // Jet supports fpow via exp(b * log(a))
+      if b.infinitesimal.forall(_ == 0.0) then
+        // Constant exponent: use power rule directly for numerical stability
+        val v = scala.math.pow(a.real, b.real)
+        val d = b.real * scala.math.pow(a.real, b.real - 1.0) * a.infinitesimal(0)
+        Jet(v, Array(d))
       else
-        // General case: f^g = exp(g * ln(f))
-        val v = scala.math.pow(a.value, b.value)
-        val d = v * (b.deriv * scala.math.log(a.value) + b.value * a.deriv / a.value)
-        Dual(v, d)
+        // General case: a^b = exp(b * ln(a))
+        val v = scala.math.pow(a.real, b.real)
+        val d = v * (b.infinitesimal(0) * scala.math.log(a.real) + b.real * a.infinitesimal(0) / a.real)
+        Jet(v, Array(d))
 
-    def sin(a: Dual) = Dual(scala.math.sin(a.value), scala.math.cos(a.value) * a.deriv)
-    def cos(a: Dual) = Dual(scala.math.cos(a.value), -scala.math.sin(a.value) * a.deriv)
-    def tan(a: Dual) =
-      val c = scala.math.cos(a.value)
-      Dual(scala.math.tan(a.value), a.deriv / (c * c))
-    end tan
-    def exp(a: Dual) =
-      val e = scala.math.exp(a.value)
-      Dual(e, e * a.deriv)
-    end exp
-    def log(a: Dual) = Dual(scala.math.log(a.value), a.deriv / a.value)
-    def sqrt(a: Dual) =
-      val s = scala.math.sqrt(a.value)
-      Dual(s, a.deriv / (2.0 * s))
-    end sqrt
+    def sin(a: Jet[Double]): Jet[Double] = spire.math.sin(a)
+    def cos(a: Jet[Double]): Jet[Double] = spire.math.cos(a)
+    def tan(a: Jet[Double]): Jet[Double] = spire.math.tan(a)
+    def exp(a: Jet[Double]): Jet[Double] = spire.math.exp(a)
+    def log(a: Jet[Double]): Jet[Double] = spire.math.log(a)
+    def sqrt(a: Jet[Double]): Jet[Double] = spire.math.sqrt(a)
   end given
 
-  given MathShow[Dual] with
-    def show(a: Dual): String =
-      val vs = if a.value % 1 == 0 && !a.value.isInfinite then a.value.toLong.toString else a.value.toString
-      val ds = if a.deriv % 1 == 0 && !a.deriv.isInfinite then a.deriv.toLong.toString else a.deriv.toString
+  given MathShow[Jet[Double]] with
+    def show(a: Jet[Double]): String =
+      val vs =
+        if a.real % 1 == 0 && !a.real.isInfinite then a.real.toLong.toString
+        else a.real.toString
+      val d = a.infinitesimal(0)
+      val ds =
+        if d % 1 == 0 && !d.isInfinite then d.toLong.toString
+        else d.toString
       s"($vs, $ds)"
     end show
   end given
-end Dual
-
-object ForwardDiff:
 
   /** Compute the value and partial derivative of an expression with respect to a given variable.
     *
@@ -83,50 +73,50 @@ object ForwardDiff:
     * @param withRespectTo
     *   the variable to differentiate with respect to
     * @return
-    *   an `EvalResult[Dual]` where `Numeric(Dual(f, f'))` gives both the function value and its derivative
+    *   an `EvalResult[Jet[Double]]` where `Numeric(jet)` gives both `jet.real` (function value) and `jet.infinitesimal(0)` (partial derivative)
     */
   def differentiate(
       expr: MathExpr[Double],
       env: Map[String, Double],
       withRespectTo: String
-  ): EvalResult[Dual] =
+  ): EvalResult[Jet[Double]] =
     val prepared = Evaluator.foldConstants(Evaluator.substituteConstantsPublic(expr))
-    val lifted = liftToDual(prepared)
-    val dualEnv: Map[String, Dual] = env.map { case (name, value) =>
-      name -> Dual(value, if name == withRespectTo then 1.0 else 0.0)
+    val lifted = liftToJet(prepared)
+    val jetEnv: Map[String, Jet[Double]] = env.map { case (name, value) =>
+      name -> Jet(value, Array(if name == withRespectTo then 1.0 else 0.0))
     }
-    Evaluator.eval[Dual](lifted, dualEnv)
+    Evaluator.eval[Jet[Double]](lifted, jetEnv)
   end differentiate
 
-  /** Lift a `MathExpr[Double]` to `MathExpr[Dual]` by wrapping all `Number(d)` nodes with `Dual(d, 0.0)`. */
-  private def liftToDual(expr: MathExpr[Double]): MathExpr[Dual] = expr match
-    case Number(v)                      => Number(Dual(v, 0.0))
+  /** Lift a `MathExpr[Double]` to `MathExpr[Jet[Double]]` by wrapping all `Number(d)` nodes. */
+  private def liftToJet(expr: MathExpr[Double]): MathExpr[Jet[Double]] = expr match
+    case Number(v)                      => Number(Jet(v, Array(0.0)))
     case Symbol(n)                      => Symbol(n)
     case Constant(n)                    => Constant(n)
-    case Add(l, r)                      => Add(liftToDual(l), liftToDual(r))
-    case Sub(l, r)                      => Sub(liftToDual(l), liftToDual(r))
-    case Mul(l, r)                      => Mul(liftToDual(l), liftToDual(r))
-    case Div(l, r)                      => Div(liftToDual(l), liftToDual(r))
-    case Pow(b, e)                      => Pow(liftToDual(b), liftToDual(e))
-    case Neg(e)                         => Neg(liftToDual(e))
-    case FunctionCall(n, args)          => FunctionCall(n, args.map(liftToDual))
-    case Fraction(n, d)                 => Fraction(liftToDual(n), liftToDual(d))
-    case Root(deg, rad)                 => Root(deg.map(liftToDual), liftToDual(rad))
-    case Group(e)                       => Group(liftToDual(e))
-    case ExprSeq(es)                    => ExprSeq(es.map(liftToDual))
-    case BracketGroup(o, c, e)          => BracketGroup(o, c, liftToDual(e))
-    case Superscript(b, s)              => Superscript(liftToDual(b), liftToDual(s))
-    case Subscript(b, s)                => Subscript(liftToDual(b), liftToDual(s))
+    case Add(l, r)                      => Add(liftToJet(l), liftToJet(r))
+    case Sub(l, r)                      => Sub(liftToJet(l), liftToJet(r))
+    case Mul(l, r)                      => Mul(liftToJet(l), liftToJet(r))
+    case Div(l, r)                      => Div(liftToJet(l), liftToJet(r))
+    case Pow(b, e)                      => Pow(liftToJet(b), liftToJet(e))
+    case Neg(e)                         => Neg(liftToJet(e))
+    case FunctionCall(n, args)          => FunctionCall(n, args.map(liftToJet))
+    case Fraction(n, d)                 => Fraction(liftToJet(n), liftToJet(d))
+    case Root(deg, rad)                 => Root(deg.map(liftToJet), liftToJet(rad))
+    case Group(e)                       => Group(liftToJet(e))
+    case ExprSeq(es)                    => ExprSeq(es.map(liftToJet))
+    case BracketGroup(o, c, e)          => BracketGroup(o, c, liftToJet(e))
+    case Superscript(b, s)              => Superscript(liftToJet(b), liftToJet(s))
+    case Subscript(b, s)                => Subscript(liftToJet(b), liftToJet(s))
     case Operator(s)                    => Operator(s)
     case TextNode(c)                    => TextNode(c)
-    case SubSup(b, sub, sup)            => SubSup(liftToDual(b), liftToDual(sub), liftToDual(sup))
-    case Over(b, t)                     => Over(liftToDual(b), liftToDual(t))
-    case Under(b, bot)                  => Under(liftToDual(b), liftToDual(bot))
-    case Style(v, c)                    => Style(v, liftToDual(c))
-    case Enclose(n, c)                  => Enclose(n, liftToDual(c))
-    case Color(col, c)                  => Color(col, liftToDual(c))
-    case Sum(idx, lo, hi, body)         => Sum(liftToDual(idx), liftToDual(lo), liftToDual(hi), liftToDual(body))
-    case Integral(v, lo, hi, body)      => Integral(liftToDual(v), liftToDual(lo), liftToDual(hi), liftToDual(body))
-    case MathVector(elems)              => MathVector(elems.map(liftToDual))
-    case Matrix(elems, r, c, rs, cs, o) => Matrix(elems.map(liftToDual), r, c, rs, cs, o)
+    case SubSup(b, sub, sup)            => SubSup(liftToJet(b), liftToJet(sub), liftToJet(sup))
+    case Over(b, t)                     => Over(liftToJet(b), liftToJet(t))
+    case Under(b, bot)                  => Under(liftToJet(b), liftToJet(bot))
+    case Style(v, c)                    => Style(v, liftToJet(c))
+    case Enclose(n, c)                  => Enclose(n, liftToJet(c))
+    case Color(col, c)                  => Color(col, liftToJet(c))
+    case Sum(idx, lo, hi, body)         => Sum(liftToJet(idx), liftToJet(lo), liftToJet(hi), liftToJet(body))
+    case Integral(v, lo, hi, body)      => Integral(liftToJet(v), liftToJet(lo), liftToJet(hi), liftToJet(body))
+    case MathVector(elems)              => MathVector(elems.map(liftToJet))
+    case Matrix(elems, r, c, rs, cs, o) => Matrix(elems.map(liftToJet), r, c, rs, cs, o)
 end ForwardDiff

@@ -10,7 +10,8 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   def mvnDeps = Seq(
     build.V.jsDom,
     build.V.laminar,
-    build.V.fastparse
+    build.V.fastparse,
+    build.V.spire
   )
   // Add JS-only sources (MathMLCompiler, LaminarRenderer)
   def jsSources = Task.Sources(moduleDir / "src-js")
@@ -31,7 +32,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   // ── Cross-platform JVM module ───────────────────────────────────────────────
   object jvm extends ScalaModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
-    def mvnDeps = Seq(build.V.fastparse)
+    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
     override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
@@ -45,7 +46,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   object js extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
-    def mvnDeps = Seq(build.V.fastparse)
+    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
     override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
@@ -63,7 +64,7 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   object native extends ScalaNativeModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
     def scalaNativeVersion = "0.5.10"
-    def mvnDeps = Seq(build.V.fastparse)
+    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
     override def artifactName = Task("mathlify")
     override def sources = Task.Sources(moduleDir / os.up / "src")
 
