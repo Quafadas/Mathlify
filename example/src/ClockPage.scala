@@ -273,10 +273,10 @@ object ClockPage:
       cls := "clock-page",
       // Reset animation step whenever any computation input changes so the
       // orbit always re-plays from the beginning after a parameter change.
-      aVar.signal.changes --> (_ => animStepVar.set(0)),
-      bVar.signal.changes --> (_ => animStepVar.set(0)),
-      nVar.signal.changes --> (_ => animStepVar.set(0)),
-      opVar.signal.changes --> (_ => animStepVar.set(0)),
+      aVar.signal.changes --> (_ => animStepVar.set(1)),
+      bVar.signal.changes --> (_ => animStepVar.set(1)),
+      nVar.signal.changes --> (_ => animStepVar.set(1)),
+      opVar.signal.changes --> (_ => animStepVar.set(1)),
       h2("Clock Arithmetic"),
       p(
         cls := "clock-intro",
@@ -387,7 +387,7 @@ object ClockPage:
                   cls := "clock-mode-btn" + (if mode == "animate" then " clock-mode-active" else ""),
                   "Animate",
                   onClick --> { _ =>
-                    animStepVar.set(0); modeVar.set("animate")
+                    animStepVar.set(1); modeVar.set("animate")
                   }
                 )
               )
@@ -420,7 +420,7 @@ object ClockPage:
                   button(
                     cls := "clock-anim-btn clock-anim-reset",
                     "Reset",
-                    onClick --> (_ => animStepVar.set(0))
+                    onClick --> (_ => animStepVar.set(1))
                   )
                 ): HtmlElement
               else span(): HtmlElement

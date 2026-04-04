@@ -106,18 +106,18 @@ class ClockPageTest extends PlaywrightTestBase:
     // At step 1, Prev is enabled and Next is enabled
     assert(!page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("← Prev")).isDisabled())
     assert(!page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).isDisabled())
-    // Clicking Animate button resets step to 0
+    // Clicking Animate button resets step to 1
     page.locator(".clock-mode-btn").filter(new Locator.FilterOptions().setHasText("Animate")).click()
-    assert(label.textContent().contains("0 / 5"), s"Expected '0 / 5' after re-clicking Animate, got: ${label.textContent()}")
-    // Prev should be disabled at step 0
-    assert(page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("← Prev")).isDisabled())
+    assert(label.textContent().contains("1 / 5"), s"Expected '1 / 5' after re-clicking Animate, got: ${label.textContent()}")
+    // Prev should be enabled at step 1
+    assert(!page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("← Prev")).isDisabled())
     // Click Next a few times
     page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
     page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
-    assert(label.textContent().contains("2 / 5"), s"Expected '2 / 5' after two nexts, got: ${label.textContent()}")
-    // Reset brings back to 0
+    assert(label.textContent().contains("3 / 5"), s"Expected '3 / 5' after two nexts, got: ${label.textContent()}")
+    // Reset brings back to 1
     page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Reset")).click()
-    assert(label.textContent().contains("0 / 5"), s"Expected '0 / 5' after reset, got: ${label.textContent()}")
+    assert(label.textContent().contains("1 / 5"), s"Expected '1 / 5' after reset, got: ${label.textContent()}")
   }
 
   test("howto section is rendered below discover mode") {
@@ -126,9 +126,9 @@ class ClockPageTest extends PlaywrightTestBase:
     assert(page.locator(".clock-howto-section").count() == 3)
   }
 
-  test("animate mode resets to step 0 when start value (a) changes") {
+  test("animate mode resets to step 1 when start value (a) changes") {
     openClockPage()
-    // Page opens in animate mode (default). Set params — each change triggers a reset to 0.
+    // Page opens in animate mode (default). Set params — each change triggers a reset to 1.
     // Use n=9, multiplication, b=2 so orbit lengths differ by starting value:
     //   orbit from a=1: [1,2,4,8,7,5,1] → maxStep=6
     //   orbit from a=3: [3,6,3]          → maxStep=2
@@ -137,14 +137,14 @@ class ClockPageTest extends PlaywrightTestBase:
     page.locator(".clock-op-btn").filter(new Locator.FilterOptions().setHasText("Multiplication")).click()
     page.locator("input[type='range'].clock-slider").fill("9")
     val label = page.locator(".clock-anim-step-label")
-    assert(label.textContent().contains("0 / 6"), s"Expected orbit length 6 from a=1, got: ${label.textContent()}")
+    assert(label.textContent().contains("1 / 6"), s"Expected orbit length 6 from a=1, got: ${label.textContent()}")
     // Advance 3 steps
     for _ <- 1 to 3 do page.locator(".clock-anim-btn").filter(new Locator.FilterOptions().setHasText("Next →")).click()
     end for
-    assert(label.textContent().contains("3 / 6"), s"Expected step 3 / 6, got: ${label.textContent()}")
-    // Change start value to 3 — animation must reset to step 0 with the new orbit length
+    assert(label.textContent().contains("4 / 6"), s"Expected step 4 / 6, got: ${label.textContent()}")
+    // Change start value to 3 — animation must reset to step 1 with the new orbit length
     page.locator("input.clock-number-input").nth(0).fill("3")
-    assert(label.textContent().contains("0 / 2"), s"Expected reset to 0 / 2 when a changes, got: ${label.textContent()}")
+    assert(label.textContent().contains("1 / 2"), s"Expected reset to 1 / 2 when a changes, got: ${label.textContent()}")
   }
 
   test("discover card updates page state correctly") {
