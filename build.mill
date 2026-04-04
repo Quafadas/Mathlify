@@ -19,7 +19,7 @@ object V:
   val vecxt: Dep = mvn"io.github.quafadas::vecxt::0.0.36"
   val scalaVersion = "3.8.2"
   val scalaJSVersion = "1.20.2"
-  val munitVersion = "1.1.1"
+  val munitVersion = "1.2.2"
   val webawesome = mvn"io.github.nguyenyou::webawesome-laminar::3.0.0"
   val playwrightVersion = build.pwV
 end V
