@@ -56,11 +56,29 @@ jobs:
       - name: Install npm dependencies (jsdom)
         run: npm ci
 
-      - name: Compile
+      - name: Compile (JS backward-compat)
         run: ./mill mathlify.compile
 
-      - name: Run tests
+      - name: Compile (JVM cross-platform)
+        run: ./mill mathlify.jvm.compile
+
+      - name: Compile (JS cross-platform)
+        run: ./mill mathlify.js.compile
+
+      - name: Compile (Native cross-platform)
+        run: ./mill mathlify.native.compile
+
+      - name: Run tests (JS backward-compat)
         run: ./mill mathlify.test
+
+      - name: Run tests (JVM cross-platform)
+        run: ./mill mathlify.jvm.test
+
+      - name: Run tests (JS cross-platform)
+        run: ./mill mathlify.js.test
+
+      - name: Run tests (Native cross-platform)
+        run: ./mill mathlify.native.test
 
       - name: Run tests
         run: ./mill appTest

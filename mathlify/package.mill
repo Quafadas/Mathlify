@@ -1,19 +1,23 @@
 package build.mathlify
 
-import mill.*, scalalib.*, scalajslib.*
+import mill.*, scalalib.*, scalajslib.*, scalanativelib.*
 import mill.scalajslib.api.*
 
+// ── Main module: backward-compat JS build + platform sub-modules ──────────────
 object `package` extends ScalaJSModule, build.MathlifyPublishModule:
-  def scalaVersion = build.V.scalaVersion
+  def scalaVersion   = build.V.scalaVersion
   def scalaJSVersion = build.V.scalaJSVersion
   def mvnDeps = Seq(
     build.V.jsDom,
     build.V.laminar,
     build.V.fastparse
   )
+  // Add JS-only sources (MathMLCompiler, LaminarRenderer)
+  def jsSources                = Task.Sources(moduleDir / "src-js")
+  override def sources = Task { super.sources() ++ jsSources() }
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:
-    def scalaVersion = build.V.scalaVersion
+    def scalaVersion   = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
     def mvnDeps = Seq(
       mvn"org.scalameta::munit::1.2.2",
@@ -23,4 +27,52 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
     def moduleDeps = Seq(build.mathlify)
     override def jsEnvConfig = JsEnvConfig.JsDom()
   end test
+
+  // ── Cross-platform JVM module ───────────────────────────────────────────────
+  object jvm extends ScalaModule, build.MathlifyPublishModule:
+    def scalaVersion = build.V.scalaVersion
+    def mvnDeps      = Seq(build.V.fastparse)
+    override def artifactName = Task { "mathlify" }
+    override def sources = Task.Sources(moduleDir / os.up / "src")
+
+    object test extends ScalaTests, TestModule.Munit:
+      def mvnDeps = Seq(mvn"org.scalameta::munit::1.2.2")
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+    end test
+  end jvm
+
+  // ── Cross-platform JS module (no Laminar/DOM) ───────────────────────────────
+  object js extends ScalaJSModule, build.MathlifyPublishModule:
+    def scalaVersion   = build.V.scalaVersion
+    def scalaJSVersion = build.V.scalaJSVersion
+    def mvnDeps        = Seq(build.V.fastparse)
+    override def artifactName = Task { "mathlify" }
+    override def sources = Task.Sources(moduleDir / os.up / "src")
+
+    object test extends TestScalaJSModule, TestModule.Munit:
+      def scalaVersion   = build.V.scalaVersion
+      def scalaJSVersion = build.V.scalaJSVersion
+      def mvnDeps      = Seq(mvn"org.scalameta::munit::1.2.2")
+      def moduleDeps   = Seq(js)
+      override def sources     = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+      override def jsEnvConfig = JsEnvConfig.JsDom()
+    end test
+  end js
+
+  // ── Cross-platform Native module ────────────────────────────────────────────
+  object native extends ScalaNativeModule, build.MathlifyPublishModule:
+    def scalaVersion       = build.V.scalaVersion
+    def scalaNativeVersion = "0.5.7"
+    def mvnDeps            = Seq(build.V.fastparse)
+    override def artifactName = Task { "mathlify" }
+    override def sources = Task.Sources(moduleDir / os.up / "src")
+
+    object test extends TestScalaNativeModule, TestModule.Munit:
+      def scalaVersion       = build.V.scalaVersion
+      def scalaNativeVersion = "0.5.7"
+      def mvnDeps = Seq(mvn"org.scalameta::munit::1.2.2")
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
+    end test
+  end native
+
 end `package`
