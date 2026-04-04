@@ -18,6 +18,7 @@ object Page:
   end Matrix
   case object Clock extends Page
   case object Dijkstra extends Page
+  case object AutoDiff extends Page
 end Page
 
 // Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
@@ -41,6 +42,8 @@ val rekenrekRoute =
   Route.static(Page.Rekenrek, root / "rekenrek", basePath = appBasePath)
 val arrayBoardRoute =
   Route.static(Page.ArrayBoard, root / "arrayboard", basePath = appBasePath)
+val autoDiffRoute =
+  Route.static(Page.AutoDiff, root / "autodiff", basePath = appBasePath)
 val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])](
   encode = page => (Some(page.a), Some(page.b)),
   decode = args =>
@@ -54,7 +57,7 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
 
 object router
     extends Router[Page](
-      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, clockRoute, dijkstraRoute, matrixRoute),
+      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, autoDiffRoute, clockRoute, dijkstraRoute, matrixRoute),
       serializePage = {
         case Page.Home         => "Home"
         case Page.Expression   => "Expression"
@@ -63,6 +66,7 @@ object router
         case Page.Dijkstra     => "Dijkstra"
         case Page.Rekenrek     => "Rekenrek"
         case Page.ArrayBoard   => "ArrayBoard"
+        case Page.AutoDiff     => "AutoDiff"
         case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
       },
       deserializePage = {
@@ -73,6 +77,7 @@ object router
         case "Dijkstra"                        => Page.Dijkstra
         case "Rekenrek"                        => Page.Rekenrek
         case "ArrayBoard"                      => Page.ArrayBoard
+        case "AutoDiff"                        => Page.AutoDiff
         case s if s.startsWith("Matrix\u0000") =>
           val rest = s.stripPrefix("Matrix\u0000")
           val sep = rest.indexOf('\u0000')
@@ -88,6 +93,7 @@ object router
         case Page.Dijkstra   => "Dijkstra's Algorithm – Mathlify"
         case Page.Rekenrek   => "Rekenrek – Mathlify"
         case Page.ArrayBoard => "Array Board Game – Mathlify"
+        case Page.AutoDiff   => "Automatic Differentiation – Mathlify"
         case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
       },
       routeFallback = _ => Page.Home
@@ -108,6 +114,7 @@ def app =
     .collectStatic(Page.Dijkstra)(DijkstraPage.render())
     .collectStatic(Page.Rekenrek)(RekenrekPage.render())
     .collectStatic(Page.ArrayBoard)(ArrayBoardPage.render())
+    .collectStatic(Page.AutoDiff)(AutoDiffPage.render())
     .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))
 
   div(
