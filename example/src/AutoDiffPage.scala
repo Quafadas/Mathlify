@@ -344,13 +344,10 @@ object AutoDiffPage:
   def render(): HtmlElement =
     div(
       cls := "autodiff-page",
-
       evaluatorSection(),
       Divider()(),
       theorySection(),
       Divider()(),
       examplesSection()
-
-
     )
 end AutoDiffPage
