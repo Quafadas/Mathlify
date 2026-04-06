@@ -7,7 +7,7 @@ object AutoDiffPage:
 
   private def mathml(ascii: String): HtmlElement =
     mathlify.AsciiMath.translate(ascii) match
-      case Right(expr) => mathlify.LaminarRenderer.render(expr)
+      case Right(expr) => mathlify.LaminarRenderer.renderInline(expr)
       case Left(_)     => span(ascii)
 
   private def fmt(d: Double): String =
@@ -344,10 +344,13 @@ object AutoDiffPage:
   def render(): HtmlElement =
     div(
       cls := "autodiff-page",
+
+      evaluatorSection(),
+      Divider()(),
       theorySection(),
       Divider()(),
-      examplesSection(),
-      Divider()(),
-      evaluatorSection()
+      examplesSection()
+
+
     )
 end AutoDiffPage

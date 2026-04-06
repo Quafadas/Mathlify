@@ -356,4 +356,29 @@ class MathExprSpec extends AnyFunSuite:
         )
     )
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 5. LaminarRenderer
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test("LaminarRenderer: render wraps in div") {
+    val el = LaminarRenderer.render(Number(3.0))
+    assert(el.ref.tagName.toLowerCase == "div")
+  }
+
+  test("LaminarRenderer: renderInline wraps in span") {
+    val el = LaminarRenderer.renderInline(Number(3.0))
+    assert(el.ref.tagName.toLowerCase == "span")
+  }
+
+  test("LaminarRenderer: renderInline appends math child after mount") {
+    val el = LaminarRenderer.renderInline(Symbol("x"))
+    val container = dom.document.createElement("div")
+    dom.document.body.appendChild(container)
+    com.raquo.laminar.api.L.render(container, el)
+    val math = el.ref.querySelector("math")
+    assert(math != null, "expected a math element inside the span after mounting")
+    dom.document.body.removeChild(container)
+  }
+
 end MathExprSpec
