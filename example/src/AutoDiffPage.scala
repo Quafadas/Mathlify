@@ -425,12 +425,12 @@ object AutoDiffPage:
   private def evaluatorSection(): HtmlElement =
     val asciiVar = Var("x^2 * y + y^3")
     val asciiResult = asciiVar.signal.map(mathlify.AsciiMath.translate)
-    val varMap = Var(Map.empty[String, Double])
+    val varMap = Var(Map("x" -> 2.0, "y" -> 3.0))
 
     div(
       cls := "evaluator-section",
       h2("Interactive Derivative Evaluator"),
-      p("Enter any expression, set variable values, and see ALL partial derivatives computed in a single pass."),
+      p("Enter an expression, set variable values, and see partial derivatives computed in a single pass."),
       div(
         cls := "cards-grid",
         // Expression input
@@ -460,6 +460,13 @@ object AutoDiffPage:
           div(slot := "header", Icon()("sliders"), span(" Variables")),
           p("Set values for each variable:"),
           div(
+            // Prune stale entries from varMap whenever the expression changes
+            asciiResult.changes.map {
+              case Right(expr) => mathlify.Evaluator.unboundVars(expr)
+              case Left(_)     => Set.empty[String]
+            } --> { currentVars =>
+              varMap.update(m => m.filter((k, _) => currentVars.contains(k)))
+            },
             cls := "variable-inputs",
             children <-- asciiResult.map { s =>
               s.fold(
@@ -470,6 +477,8 @@ object AutoDiffPage:
                   else
                     vars.map { v =>
                       Input(_.label := s"$v", _.placeholder := "0", _.tpe := "number")(
+                        // Bind displayed value back to varMap so re-rendered inputs show stored values
+                        value <-- varMap.signal.map(m => m.get(v).map(fmt).getOrElse("")),
                         onInput.mapToValue --> { value =>
                           varMap.update(m => m + (v -> mathlify.Evaluator.parseConstant(value).getOrElse(Double.NaN)))
                         }
@@ -494,7 +503,8 @@ object AutoDiffPage:
                   _ => span("Parse error"): HtmlElement,
                   expr =>
                     val freeVars = mathlify.Evaluator.unboundVars(expr)
-                    val allBound = freeVars.forall(v => vars.contains(v) && !vars(v).isNaN)
+                    val activeVars = vars.filter((k, _) => freeVars.contains(k))
+                    val allBound = freeVars.forall(v => activeVars.contains(v) && !activeVars(v).isNaN)
                     if freeVars.isEmpty then
                       // No free variables — just evaluate
                       mathlify.Evaluator.eval(expr) match
@@ -511,7 +521,7 @@ object AutoDiffPage:
                         "Set all variable values to compute the gradient."
                       ): HtmlElement
                     else
-                      mathlify.ForwardDiff.gradient(expr, vars) match
+                      mathlify.ForwardDiff.gradient(expr, activeVars) match
                         case Right(dr) =>
                           Callout(_.variant := "success")(
                             cls := "derivative-result",
@@ -602,6 +612,60 @@ object AutoDiffPage:
         "(the 'tape'), carrying a memory cost proportional to the depth of the computation graph. ",
         "Forward-mode needs no tape and has minimal memory overhead — which can make it preferable ",
         "when differentiating through long sequences or in memory-constrained environments."
+      ),
+      h3("Forward Mode vs Backward Mode"),
+      div(
+        cls := "mode-comparison",
+        h4("Forward Mode"),
+        Callout(_.variant := "success")(
+          div(slot := "header", strong("Forward-mode strengths")),
+          ul(
+            li(
+              strong("Conceptual simplicity — "),
+              "the dual number model is entirely self-contained. Every value carries its own derivative; ",
+              "there is nothing else to understand."
+            ),
+            li(
+              strong("Stateless & tape-free — "),
+              "each operation is a pure function of its dual-number inputs. No intermediate values need ",
+              "to be stored, no computation graph built, no backward pass scheduled."
+            ),
+            li(
+              strong("Natural functional composition — "),
+              "because each dual number is self-describing, functions compose without any special wiring: ",
+              mathml("f(g(x))"),
+              " just works. The chain rule falls out automatically from the arithmetic."
+            ),
+            li(
+              strong("Preferred when inputs ≪ outputs — "),
+              "computing a full Jacobian row-by-row, differentiating through recurrent sequences, ",
+              "or working in memory-constrained settings."
+            )
+          )
+        ),
+        p(),
+        h4("Backward Mode"),
+        Callout(_.variant := "neutral")(
+          div(slot := "header", strong("Reverse-mode strengths")),
+          ul(
+            li(
+              strong("O(M) in outputs — "),
+              "one backward pass gives all ",
+              mathml("N"),
+              " gradients when there is a single scalar output (",
+              mathml("M = 1"),
+              "), making it indispensable for training neural networks."
+            ),
+            li(
+              strong("Preferred when inputs ≫ outputs — "),
+              "the standard choice for any loss-function gradient in machine learning."
+            ),
+            li(
+              strong("Trade-off: tape memory — "),
+              "intermediate activations must be stored during the forward pass, with memory cost proportional to the depth of the computation graph."
+            )
+          )
+        )
       )
     )
 
