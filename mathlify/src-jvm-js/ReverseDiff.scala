@@ -274,6 +274,7 @@ object ReverseDiff:
   /** Propagate adjoints from output to inputs, recording each step. */
   private def reversePass(tape: Vector[TapeNode], outputIdx: Int): (Array[Double], List[BackStep]) =
     val adjoints = Array.fill(tape.length)(0.0)
+    // ∂f/∂f = 1: the output's adjoint is 1 because the derivative of the output with respect to itself is 1
     adjoints(outputIdx) = 1.0
 
     val steps = scala.collection.mutable.ListBuffer.empty[BackStep]
@@ -321,7 +322,7 @@ object ReverseDiff:
             val ev = tape(ei).value
             val powResult = node.value
             pushAdj(steps, adjoints, bi, adj * ev * math.pow(bv, ev - 1), i, s"∂(aᵇ)/∂a = b·a^(b−1)")
-            if tape(ei).op != Op.Const then // only propagate to exponent if it's not constant
+            if tape(ei).op != Op.Const then // Constant exponents have no gradient — they are not variables being differentiated
               pushAdj(steps, adjoints, ei, adj * powResult * math.log(bv), i, s"∂(aᵇ)/∂b = aᵇ·ln(a)")
 
           case Op.NegOp =>

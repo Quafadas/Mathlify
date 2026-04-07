@@ -39,11 +39,11 @@ object ReverseADPage:
         cls := "dual-rules",
         dualRule(
           "1. Forward Pass (Build Tape)",
-          "text(Evaluate the expression, recording every operation in a computation graph (\"tape\").)"
+          "f(x) rarr v_0, v_1, ..., v_n"
         ),
         dualRule(
           "2. Backward Pass (Propagate Adjoints)",
-          "text(Walk the tape in reverse. For each operation, push the adjoint to its parents using the chain rule.)"
+          "bar(v_n) = 1, bar(v_i) += bar(v_j) * (del v_j)/(del v_i)"
         )
       ),
       h3("Adjoint Rules"),
@@ -55,12 +55,12 @@ object ReverseADPage:
       ),
       div(
         cls := "dual-rules",
-        dualRule("Addition: f = a + b", "text(adj)(a) += text(adj)(f), text(adj)(b) += text(adj)(f)"),
-        dualRule("Subtraction: f = a − b", "text(adj)(a) += text(adj)(f), text(adj)(b) += -text(adj)(f)"),
-        dualRule("Multiplication: f = a × b", "text(adj)(a) += text(adj)(f) * b, text(adj)(b) += text(adj)(f) * a"),
-        dualRule("Division: f = a ÷ b", "text(adj)(a) += text(adj)(f) / b, text(adj)(b) += -text(adj)(f) * a / b^2"),
-        dualRule("Power: f = a^b", "text(adj)(a) += text(adj)(f) * b * a^(b-1)"),
-        dualRule("Chain rule (general)", "text(adj)(x) += text(adj)(f) * (df)/(dx)")
+        dualRule("Addition: f = a + b", "bar(a) += bar(f), bar(b) += bar(f)"),
+        dualRule("Subtraction: f = a − b", "bar(a) += bar(f), bar(b) += -bar(f)"),
+        dualRule("Multiplication: f = a × b", "bar(a) += bar(f) * b, bar(b) += bar(f) * a"),
+        dualRule("Division: f = a ÷ b", "bar(a) += bar(f) / b, bar(b) += -bar(f) * a / b^2"),
+        dualRule("Power: f = a^b", "bar(a) += bar(f) * b * a^(b-1)"),
+        dualRule("Chain rule (general)", "bar(x) += bar(f) * (df)/(dx)")
       ),
       h3("Why Reverse Mode?"),
       p(
