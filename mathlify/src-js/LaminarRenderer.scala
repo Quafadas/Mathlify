@@ -24,4 +24,14 @@ object LaminarRenderer:
         el.appendChild(MathMLCompiler.toMathML(expr))
       }
     )
+
+  def renderInline(expr: MathExpr[Double]): HtmlElement =
+    span(
+      onMountCallback { ctx =>
+        val el = ctx.thisNode.ref
+        while el.firstChild != null do el.removeChild(el.firstChild)
+        end while
+        el.appendChild(MathMLCompiler.toMathML(expr))
+      }
+    )
 end LaminarRenderer

@@ -1174,3 +1174,121 @@ wa-divider {
     padding: 2px;
   }
 }
+
+/* ── AutoDiff Page ──────────────────────────────────────────────────────── */
+
+.autodiff-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.theory-section,
+.examples-section,
+.evaluator-section {
+  margin-bottom: 2rem;
+}
+
+.dual-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.dual-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3b5998;
+}
+
+.highlight-formula {
+  padding: 1rem;
+  background: #eef2ff;
+  border-radius: 8px;
+  border: 1px solid #c7d2fe;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.chain-rule-steps,
+.quotient-rule-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.chain-rule-section,
+.quotient-rule-section {
+  margin-top: 1.5rem;
+}
+
+.worked-example {
+  margin-bottom: 1rem;
+}
+
+.example-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.example-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.example-label {
+  color: #555;
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.example-results {
+  margin-top: 0.5rem;
+}
+
+.diff-variable-select {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.diff-var-btn {
+  min-width: 60px;
+}
+
+.diff-var-btn.diff-var-selected {
+  background: #3b5998;
+  color: white;
+}
+
+.derivative-result .result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.evaluator-section .cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .evaluator-section .cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .evaluator-section .eval-card {
+    grid-column: 1 / -1;
+  }
+}

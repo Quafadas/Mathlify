@@ -99,6 +99,21 @@ object HomePage:
           "Play Now",
           onClick --> (_ => router.pushState(Page.ArrayBoard))
         )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
+          Icon()("chart-line"),
+          span(" Automatic Differentiation")
+        ),
+        p(
+          "Learn how forward-mode automatic differentiation works using dual numbers. Explore the chain rule and quotient rule, then compute derivatives of your own expressions interactively."
+        ),
+        Button()(
+          "Explore Derivatives",
+          onClick --> (_ => router.pushState(Page.AutoDiff))
+        )
       )
     )
 end HomePage
