@@ -114,6 +114,21 @@ object HomePage:
           "Explore Derivatives",
           onClick --> (_ => router.pushState(Page.AutoDiff))
         )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
+          Icon()("project-diagram"),
+          span(" Reverse-Mode AD")
+        ),
+        p(
+          "Explore backpropagation visually. Walk through the computation graph step by step, watch adjoints flow backward from the output, and understand how reverse-mode AD computes all gradients in a single pass."
+        ),
+        Button()(
+          "Explore Backprop",
+          onClick --> (_ => router.pushState(Page.ReverseAD))
+        )
       )
     )
 end HomePage
