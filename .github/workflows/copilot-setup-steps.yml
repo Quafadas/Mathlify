@@ -61,7 +61,7 @@ jobs:
 
       # This should resolve a JVM, download dependancies and leave mill ready for use.
       - name: setup mill
-        run: ./mill mathlify.compile && ./mill example.compile
+        run: ./mill mathlify.__.compile && ./mill example.compile
 
       - name: Install Playwright
         if: steps.cache-pw.outputs.cache-hit != 'true'
