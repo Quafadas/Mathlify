@@ -2,6 +2,7 @@ package mathlify.example
 
 import com.raquo.laminar.api.L.*
 import io.github.nguyenyou.webawesome.laminar.*
+import org.scalajs.dom
 
 object AutoDiffPage:
 
@@ -51,6 +52,34 @@ object AutoDiffPage:
         dualRule("Multiplication (Product Rule)", "(a,a') * (b,b') = (a*b, a'*b + a*b')"),
         dualRule("Division (Quotient Rule)", "(a,a') / (b,b') = (a/b, (a'*b - a*b') / b^2)")
       ),
+      h4("Transcendental & Trigonometric Functions"),
+      p(
+        "The chain rule extends naturally to unary functions. Applying a differentiable function ",
+        mathml("f"),
+        " to a dual number gives ",
+        mathml("f(a, a') = (f(a), a' * f'(a))"),
+        ":"
+      ),
+      div(
+        cls := "dual-rules",
+        dualRule("Exp", "exp(a, a') = (e^a, a' * e^a)"),
+        dualRule("Natural Log", "ln(a, a') = (ln(a), (a')/(a))"),
+        dualRule("Sine", "sin(a, a') = (sin(a), a' * cos(a))"),
+        dualRule("Cosine", "cos(a, a') = (cos(a), -a' * sin(a))"),
+        dualRule("Square Root", "sqrt(a, a') = (sqrt(a), (a') / (2 * sqrt(a)))")
+      ),
+      p(
+        "Arithmetic rules follow from expanding with ",
+        mathml("epsilon^2 = 0"),
+        ". Transcendental rules follow from truncating their Taylor series at first order — both derivations are ",
+        a(
+          href := "#",
+          onClick.preventDefault --> { _ =>
+            dom.document.getElementById("deriving-rules").scrollIntoView()
+          },
+          "shown below."
+        )
+      ),
       Divider()(),
       chainRuleSection(),
       Divider()(),
@@ -94,6 +123,169 @@ object AutoDiffPage:
         proofStep("Compute x²", "x^2 = (1, 1) * (1, 1) = (1, 1*1 + 1*1) = (1, 2)", "Product rule: (a,a')·(a,a') = (a², 2a·a')"),
         proofStep("Compute e^(x²)", "e^(x^2) = e^((1, 2)) = (e^1, e^1 * 2) = (e, 2e)", "Chain rule for exp: (eᵛ, eᵛ·v')"),
         proofStep("Result", "f(1) = e, \\ f'(1) = 2e", "The derivative of e^(x²) is 2x·e^(x²)")
+      )
+    )
+
+  // ── Deriving the rules ───────────────────────────────────────────────────
+
+  private def derivingRulesSection(): HtmlElement =
+    div(
+      idAttr := "deriving-rules",
+      cls := "deriving-rules-section",
+      h2("Deriving the Dual Number Arithmetic Rules"),
+      p(
+        "Every dual number rule can be derived by plain algebra, using a single key fact: ",
+        "we introduce a special symbol ",
+        mathml("epsilon"),
+        " (epsilon) that is ",
+        em("nilpotent"),
+        " — meaning ",
+        mathml("epsilon^2 = 0"),
+        ", yet ",
+        mathml("epsilon != 0"),
+        ". Think of it as an infinitesimally small perturbation."
+      ),
+      p(
+        "A dual number is then written ",
+        mathml("a + a' epsilon"),
+        ", pairing a real value ",
+        mathml("a"),
+        " with a derivative part ",
+        mathml("a'"),
+        "."
+      ),
+      h3("Deriving the Multiplication Rule"),
+      p(
+        "Let's work through ",
+        mathml("(a + a' epsilon)(b + b' epsilon)"),
+        " step by step:"
+      ),
+      div(
+        cls := "proof-steps",
+        proofStep(
+          "Expand",
+          "(a + a' epsilon)(b + b' epsilon) = a*b + a*b' epsilon + a'*b epsilon + a'*b' epsilon^2",
+          "Distribute like ordinary algebra"
+        ),
+        proofStep(
+          "Apply ε² = 0",
+          "= a*b + a*b' epsilon + a'*b epsilon + 0",
+          "The ε² term vanishes — this is the whole trick"
+        ),
+        proofStep(
+          "Collect ε terms",
+          "= a*b + (a'*b + a*b') epsilon",
+          "Factor out ε from the derivative part"
+        ),
+        proofStep(
+          "Read off the rule",
+          "(a, a') * (b, b') = (a*b, \\ a'*b + a*b')",
+          "Value part: ab. Derivative part: a'b + ab' — exactly the product rule!"
+        )
+      ),
+      h3("The Same Trick Works for Every Rule"),
+      p("Addition needs no special treatment — it falls straight out of expanding:"),
+      div(
+        cls := "proof-steps",
+        proofStep(
+          "Add two dual numbers",
+          "(a + a' epsilon) + (b + b' epsilon) = (a + b) + (a' + b') epsilon",
+          "Grouping real and ε parts gives the addition rule directly"
+        )
+      ),
+      p(
+        "Division is a little more work. Write ",
+        mathml("(a + a' epsilon) / (b + b' epsilon)"),
+        " and multiply top and bottom by the 'conjugate' ",
+        mathml("b - b' epsilon"),
+        ":"
+      ),
+      div(
+        cls := "proof-steps",
+        proofStep(
+          "Multiply by conjugate",
+          "((a + a' epsilon)(b - b' epsilon)) / ((b + b' epsilon)(b - b' epsilon))",
+          "Standard rationalisation trick"
+        ),
+        proofStep(
+          "Denominator",
+          "(b + b' epsilon)(b - b' epsilon) = b^2 - (b')^2 epsilon^2 = b^2",
+          "ε² = 0, so the cross term vanishes"
+        ),
+        proofStep(
+          "Numerator",
+          "(a + a' epsilon)(b - b' epsilon) = a*b + (a'*b - a*b') epsilon",
+          "Same expansion as before, ε² term dropped"
+        ),
+        proofStep(
+          "Combine",
+          "(a, a') / (b, b') = (a/b, \\ (a'*b - a*b') / b^2)",
+          "Exactly the quotient rule — no calculus needed!"
+        )
+      ),
+      h3("Transcendental Functions via Taylor Expansion"),
+      p(
+        "Algebraic rules handle +, −, ×, ÷, but what about exp, sin, cos, ln? The same ",
+        mathml("epsilon^2 = 0"),
+        " property works here too, via Taylor series. ",
+        "Any analytic function ",
+        mathml("f"),
+        " evaluated at ",
+        mathml("a + a' epsilon"),
+        " has all quadratic and higher epsilon terms vanish, leaving exactly:"
+      ),
+      div(
+        cls := "rendered-math highlight-formula",
+        mathml("f(a + a' epsilon) = f(a) + a' f'(a) epsilon")
+      ),
+      h4("Worked Example: Exp"),
+      p(
+        "Let's trace ",
+        mathml("e^(a + a' epsilon)"),
+        " step by step using the Taylor series ",
+        mathml("e^x = 1 + x + x^2/(2!) + x^3/(3!) + ..."),
+        ":"
+      ),
+      div(
+        cls := "proof-steps",
+        proofStep(
+          "Substitute the dual number",
+          "e^(a + a' epsilon) = 1 + (a + a' epsilon) + (a + a' epsilon)^2/(2!) + (a + a' epsilon)^3/(3!) + ...",
+          "Replace x with the dual number a + a'ε"
+        ),
+        proofStep(
+          "Expand the first few terms explicitly, dropping ε² = 0 terms",
+          "= 1 + (a + a' epsilon) + (a^2 + 2 a a' epsilon)/(2!) + (a^3 + 3 a^2 a' epsilon)/(3!) + ...",
+          "Each term contributes both a real part and an ε part"
+        ),
+        proofStep(
+          "Note: each power 'drops its higher than ε² terms' ",
+          "(a + a' epsilon)^n = a^n + n * a^(n-1) * a' * epsilon",
+          "Because ε² = 0. By the binomial theorem. Every term with ε² or higher vanishes, leaving only the real part and the linear ε part"
+        ),
+        proofStep(
+          "Separate real and ε columns",
+          "= (1 + a + a^2/(2!) + a^3/(3!) + ...) + (a' + (2 a a')/(2!) + (3 a^2 a')/(3!) + ...) * epsilon",
+          "Group all the real parts together and all the ε coefficients together"
+        ),
+        proofStep(
+          "Recognise both series as e^a",
+          "= e^a + a' * e^a * epsilon",
+          "Both bracketed sums are the Taylor series for eᵃ"
+        ),
+        proofStep(
+          "Result",
+          "exp(a, a') = (e^a, a' * e^a)",
+          "The chain rule d/dx[eˣ] = eˣ emerges automatically — no calculus rules needed, just algebra!"
+        )
+      ),
+      p(
+        "The same reasoning applies to sin, cos, ln and any other analytic function: ",
+        "substitute the dual number, drop all ",
+        mathml("epsilon^2"),
+        " terms, and read off the derivative from the ",
+        mathml("epsilon"),
+        " coefficient."
       )
     )
 
@@ -339,18 +531,93 @@ object AutoDiffPage:
     )
   end evaluatorSection
 
+  // ── Complexity section ──────────────────────────────────────────────────
+
+  private def complexitySection(): HtmlElement =
+    div(
+      cls := "complexity-section",
+      h2("Complexity & Limitations"),
+      h3("Forward-Mode is O(N) in the Number of Inputs"),
+      p(
+        "To compute the full gradient of a function with ",
+        mathml("N"),
+        " input variables, forward-mode AD must be run ",
+        mathml("N"),
+        " separate times — once per variable, each time seeding that variable's derivative part to 1 and all others to 0. ",
+        "Each pass produces one partial derivative, so computing all ",
+        mathml("N"),
+        " partial derivatives costs ",
+        mathml("O(N)"),
+        " evaluations of the full function."
+      ),
+      p(
+        "You can see this in the interactive evaluator above: it calls ",
+        code("ForwardDiff.gradient"),
+        ", which internally runs one forward pass per variable. For two variables that is two passes; for ten it is ten."
+      ),
+      h3("Why This Matters at Scale"),
+      p(
+        "For a function with a ",
+        em("small"),
+        " number of inputs — like the examples on this page — forward mode is efficient. ",
+        "However, consider a neural network with ",
+        mathml("N = 10^8"),
+        " parameters. Training requires the gradient of the scalar loss with respect to every weight. ",
+        "Forward-mode would need ",
+        mathml("10^8"),
+        " full forward passes through the entire network — completely intractable."
+      ),
+      p(
+        "The relationship is:"
+      ),
+      div(
+        cls := "rendered-math highlight-formula",
+        mathml("text(cost) = N_{text(inputs)} xx text(cost of one forward pass)")
+      ),
+      p(
+        "Forward-mode is therefore well-suited to functions with ",
+        strong("few inputs and many outputs"),
+        " (e.g. computing a Jacobian row-by-row). It is poorly suited to functions with ",
+        strong("many inputs and few outputs"),
+        " — exactly the shape of a loss function in machine learning."
+      ),
+      h3("The Alternative: Reverse-Mode AD (Backpropagation)"),
+      p(
+        "Reverse-mode AD — also known as backpropagation in the ML world — computes the full gradient in a single pass. ",
+        "It operates in ",
+        mathml("O(M)"),
+        " where ",
+        mathml("M"),
+        " is the number of ",
+        em("outputs"),
+        ", regardless of how many inputs there are. ",
+        "For a scalar loss function (",
+        mathml("M = 1"),
+        "), one reverse pass gives all ",
+        mathml("N"),
+        " gradients at once — making it the foundation of every modern deep learning framework."
+      ),
+      p(
+        "The trade-off is that reverse-mode requires storing intermediate values during the forward pass ",
+        "(the 'tape'), carrying a memory cost proportional to the depth of the computation graph. ",
+        "Forward-mode needs no tape and has minimal memory overhead — which can make it preferable ",
+        "when differentiating through long sequences or in memory-constrained environments."
+      )
+    )
+
   // ── Top-level render ──────────────────────────────────────────────────────
 
   def render(): HtmlElement =
     div(
       cls := "autodiff-page",
-
       evaluatorSection(),
       Divider()(),
       theorySection(),
       Divider()(),
-      examplesSection()
-
-
+      examplesSection(),
+      Divider()(),
+      derivingRulesSection(),
+      Divider()(),
+      complexitySection()
     )
 end AutoDiffPage
