@@ -4,8 +4,7 @@ import MathExpr.*
 
 /** Reverse-mode (backpropagation) automatic differentiation.
   *
-  * Builds a computation graph ("tape") during a forward pass, then propagates adjoints backward from the output to
-  * compute all partial derivatives in a single reverse sweep.
+  * Builds a computation graph ("tape") during a forward pass, then propagates adjoints backward from the output to compute all partial derivatives in a single reverse sweep.
   *
   * Each node in the tape records:
   *   - the operation performed
@@ -25,6 +24,7 @@ object ReverseDiff:
     case Var(name: String) // input variable
     case AddOp, SubOp, MulOp, DivOp, PowOp, NegOp
     case SinOp, CosOp, TanOp, ExpOp, LogOp, SqrtOp
+  end Op
 
   /** A single node in the computation tape. */
   case class TapeNode(
@@ -61,6 +61,7 @@ object ReverseDiff:
       val idx = nodes.length
       nodes += TapeNode(op, value, parents, label)
       idx
+    end add
 
     def result: Vector[TapeNode] = nodes.toVector
   end TapeBuilder
@@ -74,7 +75,7 @@ object ReverseDiff:
     val knownFunctions: Set[String] = Set("sin", "cos", "tan", "exp", "log", "sqrt")
 
     def go(e: MathExpr[Double]): Either[String, Int] = e match
-      case Number(v)  => Right(builder.add(Op.Const, v, Nil, v.toFmtString))
+      case Number(v)      => Right(builder.add(Op.Const, v, Nil, v.toFmtString))
       case Constant(name) =>
         val v = name match
           case "pi" | "π" => math.Pi
@@ -85,10 +86,10 @@ object ReverseDiff:
         env.get(name) match
           case Some(v) => Right(builder.add(Op.Var(name), v, Nil, name))
           case None    => Left(s"Unbound variable: $name")
-      case Add(l, r) => binOp(l, r, Op.AddOp, _ + _, "+")
-      case Sub(l, r) => binOp(l, r, Op.SubOp, _ - _, "−")
-      case Mul(l, r) => binOp(l, r, Op.MulOp, _ * _, "×")
-      case Div(l, r) => binOp(l, r, Op.DivOp, _ / _, "÷")
+      case Add(l, r)   => binOp(l, r, Op.AddOp, _ + _, "+")
+      case Sub(l, r)   => binOp(l, r, Op.SubOp, _ - _, "−")
+      case Mul(l, r)   => binOp(l, r, Op.MulOp, _ * _, "×")
+      case Div(l, r)   => binOp(l, r, Op.DivOp, _ / _, "÷")
       case Pow(b, exp) =>
         for
           bi <- go(b)
@@ -104,7 +105,7 @@ object ReverseDiff:
       case FunctionCall(name, List(arg)) => unaryFn(arg, name)
       case Fraction(n, d)                => binOp(n, d, Op.DivOp, _ / _, "÷")
       case Root(None, rad)               => unaryFn(rad, "sqrt")
-      case Root(Some(deg), rad) =>
+      case Root(Some(deg), rad)          =>
         // nth root = rad ^ (1/deg)
         for
           ri <- go(rad)
@@ -115,7 +116,7 @@ object ReverseDiff:
           builder.add(Op.PowOp, math.pow(rv, 1.0 / dv), List(ri, di), "root")
       case Group(inner)              => go(inner)
       case BracketGroup(_, _, inner) => go(inner)
-      case Superscript(b, exp) =>
+      case Superscript(b, exp)       =>
         for
           bi <- go(b)
           ei <- go(exp)
@@ -128,6 +129,7 @@ object ReverseDiff:
         env.get(key) match
           case Some(v) => Right(builder.add(Op.Var(key), v, Nil, key))
           case None    => Left(s"Unbound variable: $key")
+        end match
       case ExprSeq(exprs) => goExprSeq(exprs)
       case other          => Left(s"Unsupported node: ${other.getClass.getSimpleName}")
 
@@ -226,7 +228,7 @@ object ReverseDiff:
 
     def parsePrimaryExpr(items: List[MathExpr[Double]]): Either[String, (Int, List[MathExpr[Double]])] =
       items match
-        case Nil => Left("Unexpected end of expression")
+        case Nil                   => Left("Unexpected end of expression")
         case Operator("-") :: rest =>
           parsePrimaryExpr(rest).map { case (i, remaining) =>
             val v = builder.result(i).value
@@ -324,6 +326,7 @@ object ReverseDiff:
             pushAdj(steps, adjoints, bi, adj * ev * math.pow(bv, ev - 1), i, s"∂(aᵇ)/∂a = b·a^(b−1)")
             if tape(ei).op != Op.Const then // Constant exponents have no gradient — they are not variables being differentiated
               pushAdj(steps, adjoints, ei, adj * powResult * math.log(bv), i, s"∂(aᵇ)/∂b = aᵇ·ln(a)")
+            end if
 
           case Op.NegOp =>
             val List(pi) = node.parents: @unchecked
@@ -357,6 +360,7 @@ object ReverseDiff:
           case Op.SqrtOp =>
             val List(pi) = node.parents: @unchecked
             pushAdj(steps, adjoints, pi, adj / (2.0 * node.value), i, s"∂√a/∂a = 1/(2√a) = ${(1.0 / (2.0 * node.value)).toFmtString}")
+      end if
     end for
     (adjoints, steps.toList)
   end reversePass
@@ -372,13 +376,13 @@ object ReverseDiff:
     val before = adjoints(targetIdx)
     adjoints(targetIdx) += increment
     steps += BackStep(targetIdx, before, increment, fromIdx, rule)
+  end pushAdj
 
   // ── Public API ────────────────────────────────────────────────────────────
 
   /** Compute value and all partial derivatives using reverse-mode AD.
     *
-    * Returns the full computation tape, adjoints, backward steps for visualization, the function value and a map of
-    * partial derivatives.
+    * Returns the full computation tape, adjoints, backward steps for visualization, the function value and a map of partial derivatives.
     */
   def reverseGradient(
       expr: MathExpr[Double],
@@ -407,5 +411,6 @@ object ReverseDiff:
     private def toFmtString: String =
       if d == d.toLong.toDouble && !d.isInfinite then d.toLong.toString
       else f"$d%.6g"
+  end extension
 
 end ReverseDiff

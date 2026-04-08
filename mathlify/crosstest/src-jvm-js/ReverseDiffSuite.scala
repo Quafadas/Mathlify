@@ -166,8 +166,8 @@ class ReverseDiffSuite extends FunSuite:
     val rev = ReverseDiff.gradient(parsed, env).toOption.get
 
     assertEqualsDouble(rev.value, fwd.value, 1e-9, "values disagree")
-    for (name, fwdDeriv) <- fwd.partials do
-      assertEqualsDouble(rev.partials(name), fwdDeriv, 1e-9, s"∂f/∂$name disagrees")
+    for (name, fwdDeriv) <- fwd.partials do assertEqualsDouble(rev.partials(name), fwdDeriv, 1e-9, s"∂f/∂$name disagrees")
+    end for
   }
 
 end ReverseDiffSuite

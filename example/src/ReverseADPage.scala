@@ -106,12 +106,12 @@ object ReverseADPage:
   /** Lay out the tape nodes in a left-to-right graph. Nodes at the same depth level are stacked vertically. */
   private def layoutNodes(tape: Vector[mathlify.ReverseDiff.TapeNode]): (Vector[NodeLayout], Double) =
     if tape.isEmpty then return (Vector.empty, SVG_H_BASE.toDouble)
+    end if
 
     // Compute depth of each node (max depth of parents + 1)
     val depths = Array.fill(tape.length)(0)
-    for i <- tape.indices do
-      if tape(i).parents.nonEmpty then
-        depths(i) = tape(i).parents.map(depths(_)).max + 1
+    for i <- tape.indices do if tape(i).parents.nonEmpty then depths(i) = tape(i).parents.map(depths(_)).max + 1
+    end for
 
     val maxDepth = depths.max
 
@@ -128,6 +128,8 @@ object ReverseADPage:
       val n = indices.size
       val startY = (svgH - (n - 1) * 60.0) / 2.0
       for (idx, rank) <- indices.sorted.zipWithIndex do layouts(idx) = NodeLayout(x, startY + rank * 60.0, idx)
+      end for
+    end for
 
     (layouts.toVector, svgH)
   end layoutNodes
@@ -143,6 +145,7 @@ object ReverseADPage:
     import com.raquo.laminar.api.L.svg as S
 
     if tape.isEmpty then return div(cls := "graph-empty", p("No computation graph to display."))
+    end if
 
     val (layouts, svgH) = layoutNodes(tape)
     val svgW = layouts.map(_.x).max + 80.0
@@ -157,6 +160,8 @@ object ReverseADPage:
       // Replay steps up to backStepIdx
       currentAdjoints(tape.length - 1) = 1.0
       for step <- activeSteps do currentAdjoints(step.nodeIndex) = step.adjointBefore + step.adjointIncrement
+      end for
+    end if
 
     // Draw edges
     val edgeElems = tape.indices.flatMap { i =>
@@ -208,20 +213,20 @@ object ReverseADPage:
       val strokeW = if isSelected || isCurrentTarget || isCurrentSource then "2.5" else "1.5"
 
       val nodeLabel = n.op match
-        case mathlify.ReverseDiff.Op.Const    => n.label
-        case v: mathlify.ReverseDiff.Op.Var   => v.name
-        case mathlify.ReverseDiff.Op.AddOp    => "+"
-        case mathlify.ReverseDiff.Op.SubOp    => "−"
-        case mathlify.ReverseDiff.Op.MulOp    => "×"
-        case mathlify.ReverseDiff.Op.DivOp    => "÷"
-        case mathlify.ReverseDiff.Op.PowOp    => "^"
-        case mathlify.ReverseDiff.Op.NegOp    => "−()"
-        case mathlify.ReverseDiff.Op.SinOp    => "sin"
-        case mathlify.ReverseDiff.Op.CosOp    => "cos"
-        case mathlify.ReverseDiff.Op.TanOp    => "tan"
-        case mathlify.ReverseDiff.Op.ExpOp    => "exp"
-        case mathlify.ReverseDiff.Op.LogOp    => "log"
-        case mathlify.ReverseDiff.Op.SqrtOp   => "√"
+        case mathlify.ReverseDiff.Op.Const  => n.label
+        case v: mathlify.ReverseDiff.Op.Var => v.name
+        case mathlify.ReverseDiff.Op.AddOp  => "+"
+        case mathlify.ReverseDiff.Op.SubOp  => "−"
+        case mathlify.ReverseDiff.Op.MulOp  => "×"
+        case mathlify.ReverseDiff.Op.DivOp  => "÷"
+        case mathlify.ReverseDiff.Op.PowOp  => "^"
+        case mathlify.ReverseDiff.Op.NegOp  => "−()"
+        case mathlify.ReverseDiff.Op.SinOp  => "sin"
+        case mathlify.ReverseDiff.Op.CosOp  => "cos"
+        case mathlify.ReverseDiff.Op.TanOp  => "tan"
+        case mathlify.ReverseDiff.Op.ExpOp  => "exp"
+        case mathlify.ReverseDiff.Op.LogOp  => "log"
+        case mathlify.ReverseDiff.Op.SqrtOp => "√"
 
       val adjText =
         if backStepIdx > 0 then s"adj=${fmt(currentAdjoints(i))}"
@@ -277,6 +282,7 @@ object ReverseADPage:
     val dx = x2 - x1; val dy = y2 - y1
     val dist = math.sqrt(dx * dx + dy * dy)
     if dist < 0.01 then return ("", "")
+    end if
 
     // Shorten by node radius
     val nx = dx / dist; val ny = dy / dist
@@ -317,6 +323,7 @@ object ReverseADPage:
           val allBound = freeVars.forall(v => activeVars.contains(v) && !activeVars(v).isNaN)
           if allBound then mathlify.ReverseDiff.reverseGradient(expr, activeVars).toOption
           else None
+          end if
         }
       }
 
@@ -385,6 +392,7 @@ object ReverseADPage:
                         }
                       ): HtmlElement
                     }
+                  end if
               )
             }
           )
@@ -467,7 +475,7 @@ object ReverseADPage:
                   span(s"From node "),
                   code(s"$fromLabel (=${fmt(rr.tape(bs.fromNode).value)})"),
                   span(s" → "),
-                  code(s"$toLabel (=${fmt(rr.tape(bs.nodeIndex).value)})"),
+                  code(s"$toLabel (=${fmt(rr.tape(bs.nodeIndex).value)})")
                 ),
                 div(
                   span("Rule: "),
@@ -482,7 +490,9 @@ object ReverseADPage:
             case (Some(_), 0) =>
               Callout(_.variant := "neutral")(
                 cls := "step-description",
-                "Click ", strong("Next →"), " to start the backward pass. The output node begins with adjoint = 1."
+                "Click ",
+                strong("Next →"),
+                " to start the backward pass. The output node begins with adjoint = 1."
               ): HtmlElement
             case _ => div(): HtmlElement
           },
@@ -514,8 +524,9 @@ object ReverseADPage:
     val currentAdjoints = Array.fill(rr.tape.length)(0.0)
     if backStepIdx > 0 then
       currentAdjoints(rr.tape.length - 1) = 1.0
-      for step <- rr.backSteps.take(backStepIdx) do
-        currentAdjoints(step.nodeIndex) = step.adjointBefore + step.adjointIncrement
+      for step <- rr.backSteps.take(backStepIdx) do currentAdjoints(step.nodeIndex) = step.adjointBefore + step.adjointIncrement
+      end for
+    end if
 
     div(
       cls := "tape-table-container",
@@ -535,20 +546,20 @@ object ReverseADPage:
         tbody(
           rr.tape.zipWithIndex.map { case (node, i) =>
             val opName = node.op match
-              case mathlify.ReverseDiff.Op.Const        => "const"
-              case v: mathlify.ReverseDiff.Op.Var       => s"var(${v.name})"
-              case mathlify.ReverseDiff.Op.AddOp        => "add"
-              case mathlify.ReverseDiff.Op.SubOp        => "sub"
-              case mathlify.ReverseDiff.Op.MulOp        => "mul"
-              case mathlify.ReverseDiff.Op.DivOp        => "div"
-              case mathlify.ReverseDiff.Op.PowOp        => "pow"
-              case mathlify.ReverseDiff.Op.NegOp        => "neg"
-              case mathlify.ReverseDiff.Op.SinOp        => "sin"
-              case mathlify.ReverseDiff.Op.CosOp        => "cos"
-              case mathlify.ReverseDiff.Op.TanOp        => "tan"
-              case mathlify.ReverseDiff.Op.ExpOp        => "exp"
-              case mathlify.ReverseDiff.Op.LogOp        => "log"
-              case mathlify.ReverseDiff.Op.SqrtOp       => "sqrt"
+              case mathlify.ReverseDiff.Op.Const  => "const"
+              case v: mathlify.ReverseDiff.Op.Var => s"var(${v.name})"
+              case mathlify.ReverseDiff.Op.AddOp  => "add"
+              case mathlify.ReverseDiff.Op.SubOp  => "sub"
+              case mathlify.ReverseDiff.Op.MulOp  => "mul"
+              case mathlify.ReverseDiff.Op.DivOp  => "div"
+              case mathlify.ReverseDiff.Op.PowOp  => "pow"
+              case mathlify.ReverseDiff.Op.NegOp  => "neg"
+              case mathlify.ReverseDiff.Op.SinOp  => "sin"
+              case mathlify.ReverseDiff.Op.CosOp  => "cos"
+              case mathlify.ReverseDiff.Op.TanOp  => "tan"
+              case mathlify.ReverseDiff.Op.ExpOp  => "exp"
+              case mathlify.ReverseDiff.Op.LogOp  => "log"
+              case mathlify.ReverseDiff.Op.SqrtOp => "sqrt"
             val adj = currentAdjoints(i)
             val adjStr = if backStepIdx == 0 && i != rr.tape.length - 1 then "—" else fmt(adj)
             val isOutput = i == rr.tape.length - 1
