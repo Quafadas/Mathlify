@@ -19,6 +19,7 @@ object Page:
   case object Clock extends Page
   case object Dijkstra extends Page
   case object AutoDiff extends Page
+  case object ReverseAD extends Page
 end Page
 
 // Compute fragment base path dynamically so it works at any sub-path (e.g. /Mathlify/ on GitHub Pages)
@@ -44,6 +45,8 @@ val arrayBoardRoute =
   Route.static(Page.ArrayBoard, root / "arrayboard", basePath = appBasePath)
 val autoDiffRoute =
   Route.static(Page.AutoDiff, root / "autodiff", basePath = appBasePath)
+val reverseADRoute =
+  Route.static(Page.ReverseAD, root / "reversead", basePath = appBasePath)
 val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])](
   encode = page => (Some(page.a), Some(page.b)),
   decode = args =>
@@ -57,7 +60,7 @@ val matrixRoute = Route.onlyQuery[Page.Matrix, (Option[String], Option[String])]
 
 object router
     extends Router[Page](
-      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, autoDiffRoute, clockRoute, dijkstraRoute, matrixRoute),
+      routes = List(homeRoute, expressionRoute, quadraticRoute, rekenrekRoute, arrayBoardRoute, autoDiffRoute, reverseADRoute, clockRoute, dijkstraRoute, matrixRoute),
       serializePage = {
         case Page.Home         => "Home"
         case Page.Expression   => "Expression"
@@ -67,6 +70,7 @@ object router
         case Page.Rekenrek     => "Rekenrek"
         case Page.ArrayBoard   => "ArrayBoard"
         case Page.AutoDiff     => "AutoDiff"
+        case Page.ReverseAD    => "ReverseAD"
         case Page.Matrix(a, b) => s"Matrix\u0000$a\u0000$b"
       },
       deserializePage = {
@@ -78,6 +82,7 @@ object router
         case "Rekenrek"                        => Page.Rekenrek
         case "ArrayBoard"                      => Page.ArrayBoard
         case "AutoDiff"                        => Page.AutoDiff
+        case "ReverseAD"                       => Page.ReverseAD
         case s if s.startsWith("Matrix\u0000") =>
           val rest = s.stripPrefix("Matrix\u0000")
           val sep = rest.indexOf('\u0000')
@@ -94,6 +99,7 @@ object router
         case Page.Rekenrek   => "Rekenrek – Mathlify"
         case Page.ArrayBoard => "Array Board Game – Mathlify"
         case Page.AutoDiff   => "Automatic Differentiation – Mathlify"
+        case Page.ReverseAD  => "Reverse-Mode AD – Mathlify"
         case _: Page.Matrix  => "Matrix Multiplication – Mathlify"
       },
       routeFallback = _ => Page.Home
@@ -115,6 +121,7 @@ def app =
     .collectStatic(Page.Rekenrek)(RekenrekPage.render())
     .collectStatic(Page.ArrayBoard)(ArrayBoardPage.render())
     .collectStatic(Page.AutoDiff)(AutoDiffPage.render())
+    .collectStatic(Page.ReverseAD)(ReverseADPage.render())
     .collectSignal[Page.Matrix](sig => MatrixPage.render(sig))
 
   div(
