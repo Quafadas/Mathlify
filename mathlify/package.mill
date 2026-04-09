@@ -10,13 +10,11 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   def mvnDeps = Seq(
     build.V.jsDom,
     build.V.laminar,
-    build.V.fastparse,
-    build.V.spire
+    build.V.fastparse
   )
-  // Add JS-only sources (MathMLCompiler, LaminarRenderer) and JVM+JS sources (ForwardDiff)
+  // Add JS-only sources (MathMLCompiler, LaminarRenderer)
   def jsSources = Task.Sources(moduleDir / "src-js")
-  def jvmJsSources = Task.Sources(moduleDir / "src-jvm-js")
-  override def sources = Task(super.sources() ++ jsSources() ++ jvmJsSources())
+  override def sources = Task(super.sources() ++ jsSources())
 
   object test extends TestScalaJSModule, TestModule.ScalaTest:
     def scalaVersion = build.V.scalaVersion
@@ -33,14 +31,13 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   // ── Cross-platform JVM module ───────────────────────────────────────────────
   object jvm extends ScalaModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
-    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
+    def mvnDeps = Seq(build.V.fastparse)
     override def artifactName = Task("mathlify")
-    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / os.up / "src-jvm-js")
+    override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends ScalaTests, TestModule.Munit:
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
-      override def sources =
-        Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src", moduleDir / os.up / os.up / "crosstest" / "src-jvm-js")
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
     end test
   end jvm
 
@@ -48,17 +45,16 @@ object `package` extends ScalaJSModule, build.MathlifyPublishModule:
   object js extends ScalaJSModule, build.MathlifyPublishModule:
     def scalaVersion = build.V.scalaVersion
     def scalaJSVersion = build.V.scalaJSVersion
-    def mvnDeps = Seq(build.V.fastparse, build.V.spire)
+    def mvnDeps = Seq(build.V.fastparse)
     override def artifactName = Task("mathlify")
-    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / os.up / "src-jvm-js")
+    override def sources = Task.Sources(moduleDir / os.up / "src")
 
     object test extends TestScalaJSModule, TestModule.Munit:
       def scalaVersion = build.V.scalaVersion
       def scalaJSVersion = build.V.scalaJSVersion
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
       def moduleDeps = Seq(js)
-      override def sources =
-        Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src", moduleDir / os.up / os.up / "crosstest" / "src-jvm-js")
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "crosstest" / "src")
       override def jsEnvConfig = JsEnvConfig.JsDom()
     end test
   end js

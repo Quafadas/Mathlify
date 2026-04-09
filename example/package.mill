@@ -6,7 +6,7 @@ import io.github.quafadas.sjsls.ScalaJsWebAppModule
 
 object `package` extends ScalaJsWebAppModule:
   def scalaVersion = build.V.scalaVersion
-  def moduleDeps = Seq(build.mathlify)
+  def moduleDeps = Seq(build.mathlify, build.mathlifyAd)
 
   override def moduleSplitStyle = ModuleSplitStyle.SmallModulesFor(
     "mathlify",

@@ -1,0 +1,40 @@
+package build.mathlifyAd
+
+import mill.*, scalalib.*, scalajslib.*
+import mill.scalajslib.api.*
+
+// ── mathlify-ad: Automatic Differentiation module (JVM + JS, no Native) ──────
+// Spire is not available on Scala Native, so this module targets JVM and JS only.
+
+object `package` extends ScalaJSModule, build.MathlifyPublishModule:
+  def scalaVersion = build.V.scalaVersion
+  def scalaJSVersion = build.V.scalaJSVersion
+  def mvnDeps = Seq(build.V.spire)
+  def moduleDeps = Seq(build.mathlify)
+  override def artifactName = Task("mathlify-ad")
+  override def sources = Task.Sources(moduleDir / "src")
+
+  object test extends TestScalaJSModule, TestModule.Munit:
+    def scalaVersion = build.V.scalaVersion
+    def scalaJSVersion = build.V.scalaJSVersion
+    def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+    def moduleDeps = Seq(build.mathlifyAd)
+    override def jsEnvConfig = JsEnvConfig.JsDom()
+    override def sources = Task.Sources(moduleDir / os.up / "test" / "src")
+  end test
+
+  // ── JVM sub-module ────────────────────────────────────────────────────────
+  object jvm extends ScalaModule, build.MathlifyPublishModule:
+    def scalaVersion = build.V.scalaVersion
+    def mvnDeps = Seq(build.V.spire)
+    def moduleDeps = Seq(build.mathlify.jvm)
+    override def artifactName = Task("mathlify-ad")
+    override def sources = Task.Sources(moduleDir / os.up / "src")
+
+    object test extends ScalaTests, TestModule.Munit:
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.V.munitVersion}")
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
+    end test
+  end jvm
+
+end `package`
