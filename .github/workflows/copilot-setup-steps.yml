@@ -65,7 +65,7 @@ jobs:
 
       - name: Install Playwright
         if: steps.cache-pw.outputs.cache-hit != 'true'
-        run: ./mill PlaywrightSetup install --with-deps
+        run: ./mill PlaywrightSetup install chromium-headless-shell
 
       - name: playwright CLI
         run: npm install -g @playwright/cli@latest
