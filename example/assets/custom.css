@@ -129,6 +129,172 @@ wa-textarea {
   align-self: flex-start;
 }
 
+.times-table-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.times-table-intro,
+.times-question-help,
+.times-mode-note,
+.times-visual-caption,
+.times-visual-total {
+  color: #6c757d;
+}
+
+.times-table-controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.times-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.times-mode-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+}
+
+.times-mode-btn-active {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  color: #1d4ed8;
+}
+
+.times-table-picker {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  max-width: 220px;
+}
+
+.times-table-select,
+.times-answer-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.times-overview-callout,
+.times-feedback-callout,
+.times-tip-callout {
+  margin: 0;
+}
+
+.times-series-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.times-series-item {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+}
+
+.times-series-expression {
+  font-weight: 700;
+}
+
+.times-series-answer {
+  color: #1d4ed8;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.times-interactive-section,
+.times-feedback-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.times-question {
+  margin-bottom: 0;
+}
+
+.times-answer-input {
+  max-width: 180px;
+}
+
+.times-question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.times-visuals {
+  display: grid;
+  gap: 1rem;
+}
+
+.times-visual-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.times-visual-card h4,
+.times-tip-callout h4 {
+  margin: 0;
+}
+
+.times-dot-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(5, 1rem);
+  width: fit-content;
+}
+
+.times-dot {
+  border-radius: 999px;
+  height: 1rem;
+  width: 1rem;
+}
+
+.times-array-visual {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(var(--times-cols), 1.1rem);
+  width: fit-content;
+}
+
+.times-array-cell {
+  border-radius: 0.3rem;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.times-tip-callout ul {
+  margin: 0.5rem 0 0 1.2rem;
+  padding: 0;
+}
+
+@media (min-width: 700px) {
+  .times-visuals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 /* Proof & solver */
 .proof-section,
 .solver-section {

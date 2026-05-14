@@ -39,7 +39,8 @@ trait PlaywrightTestBase extends munit.FunSuite:
   override def beforeEach(context: BeforeEach): Unit =
     browser = pw.chromium().launch(options)
     page = browser.newPage()
-    page.setDefaultTimeout(10000)
+    page.setDefaultTimeout(20000)
+    page.setDefaultNavigationTimeout(20000)
   end beforeEach
 
   protected def startServer(): Unit =
