@@ -205,11 +205,15 @@ wa-textarea {
   border: 1px solid #e2e8f0;
   border-radius: 0.9rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0.5rem;
   padding: 0.9rem 1rem;
 }
 
 .times-series-expression {
+  align-items: baseline;
+  display: flex;
+  gap: 0.35rem;
   font-weight: 700;
 }
 
@@ -225,8 +229,25 @@ wa-textarea {
   gap: 1rem;
 }
 
+.times-series-visuals {
+  display: grid;
+  gap: 1rem;
+}
+
+.times-question-row {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .times-question {
-  margin-bottom: 0;
+  margin: 0;
+}
+
+.times-answer-inline {
+  max-width: 120px;
+  min-height: 2.5rem;
 }
 
 .times-answer-input {
@@ -258,17 +279,68 @@ wa-textarea {
   margin: 0;
 }
 
-.times-dot-grid {
+.times-ten-groups {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.times-ten-group {
+  background: #ffffff;
+  border: 2px dotted #94a3b8;
+  border-radius: 0.75rem;
   display: grid;
   gap: 0.45rem;
-  grid-template-columns: repeat(5, 1rem);
+  padding: 0.65rem;
   width: fit-content;
 }
 
-.times-dot {
-  border-radius: 999px;
-  height: 1rem;
-  width: 1rem;
+.times-ten-group-label {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.times-ten-group-range {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.times-rough-dots-svg {
+  max-width: 144px;
+}
+
+.times-waldorf-svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 220px;
+  width: 100%;
+}
+
+.times-waldorf-ring {
+  fill: #f8fafc;
+  stroke: #94a3b8;
+  stroke-dasharray: 4 4;
+  stroke-width: 1.5;
+}
+
+.times-waldorf-line {
+  stroke: #1d4ed8;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.times-waldorf-node {
+  fill: #ffffff;
+  stroke: #475569;
+  stroke-width: 1.3;
+}
+
+.times-waldorf-node-label {
+  dominant-baseline: middle;
+  fill: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
 }
 
 .times-array-visual {
