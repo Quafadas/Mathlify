@@ -104,6 +104,21 @@ object HomePage:
         cls := "home-card",
         div(
           slot := "header",
+          Icon()("table-cells"),
+          span(" Times Tables")
+        ),
+        p(
+          "Practise multiplication facts up to 12. Read a full table, answer a single-table quiz, or try a mixed test with visual dot and array models."
+        ),
+        Button()(
+          "Practise Tables",
+          onClick --> (_ => router.pushState(Page.TimesTable))
+        )
+      ),
+      Card(_.withHeader := true)(
+        cls := "home-card",
+        div(
+          slot := "header",
           Icon()("chart-line"),
           span(" Automatic Differentiation")
         ),
