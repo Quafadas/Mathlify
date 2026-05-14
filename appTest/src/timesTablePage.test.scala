@@ -15,10 +15,10 @@ class TimesTablePageTest extends PlaywrightTestBase:
 
   private def answerCurrentQuestion(): Unit =
     val text = page.locator(".times-question").textContent()
-    val pattern = raw"(\d+)\s×\s(\d+)\s=\s\?".r
+    val pattern = raw"(\d+)\s×\s(\d+)\s=".r
     val answer = text match
       case pattern(left, right) => left.toInt * right.toInt
-      case _                    => fail(s"Could not parse question text \"$text\". Expected format: \"number × number = ?\"")
+      case _                    => fail(s"Could not parse question text \"$text\". Expected format: \"number × number =\"")
     page.locator(".times-answer-input").fill(answer.toString)
     page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Check answer")).click()
   end answerCurrentQuestion
@@ -28,17 +28,20 @@ class TimesTablePageTest extends PlaywrightTestBase:
     assertEquals(page.locator(".times-series-item").count(), 12)
     assert(page.locator(".times-series-list").textContent().contains("12 × 2"))
     assert(page.locator(".times-series-list").textContent().contains("= 24"))
+    assert(page.locator(".times-waldorf-svg").isVisible())
   }
 
   test("quiz mode shows visuals after an answer is checked") {
     openTimesTablePage()
     page.locator(".times-mode-btn").filter(new Locator.FilterOptions().setHasText("Quiz mode")).click()
-    page.waitForSelector(".times-question")
+    page.waitForSelector(".times-question-row")
+    assert(page.locator(".times-question-row .times-answer-input").isVisible())
 
     answerCurrentQuestion()
 
     assert(page.locator(".times-feedback-callout").isVisible())
     assertEquals(page.locator(".times-visual-card").count(), 3)
+    assert(page.locator(".times-ten-group-label").first().textContent().contains("10s group"))
     assert(page.locator(".times-tip-callout").textContent().contains("Turn-around fact"))
   }
 
@@ -50,7 +53,7 @@ class TimesTablePageTest extends PlaywrightTestBase:
 
     answerCurrentQuestion()
 
-    assert(page.locator(".times-dot-grid").count() >= 2)
+    assert(page.locator(".times-ten-group").count() >= 2)
     assert(page.locator(".times-array-visual").isVisible())
   }
 

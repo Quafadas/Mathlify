@@ -34,6 +34,8 @@ object TimesTablePage:
     "#0ea5e9",
     "#f43f5e"
   )
+  private val dotsPerTenGroup = 10
+  private val dotsPerRow = 5
 
   private def randomFactor(): Int = scala.util.Random.between(1, 13)
 
@@ -88,32 +90,147 @@ object TimesTablePage:
             (1 to 12).map { n =>
               li(
                 cls := "times-series-item",
-                span(cls := "times-series-expression", s"$n × $table"),
-                span(cls := "times-series-answer", s"= ${n * table}")
+                span(
+                  cls := "times-series-expression",
+                  s"$n × $table",
+                  span(cls := "times-series-answer", s"= ${n * table}")
+                )
               )
             }.toList
+          ),
+          div(
+            cls := "times-series-visuals",
+            renderWaldorfFlower(table)
           )
         ): HtmlElement
       }
     )
   end renderSeries
 
+  private def renderWaldorfFlower(table: Int): HtmlElement =
+    import com.raquo.laminar.api.L.svg as S
+    val center = 110.0
+    val radius = 78.0
+    val points = (0 until 10).map { n =>
+      val angle = (-Math.PI / 2) + (2 * Math.PI * n.toDouble / 10.0)
+      val x = center + radius * Math.cos(angle)
+      val y = center + radius * Math.sin(angle)
+      (x, y)
+    }
+    val trace = (0 to 10).map(n => (n * table) % 10)
+    val lines = trace
+      .sliding(2)
+      .collect { case Seq(from, to) =>
+        val (x1, y1) = points(from)
+        val (x2, y2) = points(to)
+        S.line(
+          cls := "times-waldorf-line",
+          S.x1 := f"$x1%.2f",
+          S.y1 := f"$y1%.2f",
+          S.x2 := f"$x2%.2f",
+          S.y2 := f"$y2%.2f"
+        )
+      }
+      .toList
+    val nodes = points.zipWithIndex.map { case ((x, y), value) =>
+      S.g(
+        S.circle(
+          cls := "times-waldorf-node",
+          S.cx := f"$x%.2f",
+          S.cy := f"$y%.2f",
+          S.r := "12"
+        ),
+        S.text(
+          cls := "times-waldorf-node-label",
+          S.x := f"$x%.2f",
+          S.y := f"${y + 0.8}%.2f",
+          value.toString
+        )
+      )
+    }.toList
+    div(
+      cls := "times-visual-card",
+      h4("Waldorf multiplication flower"),
+      p(
+        cls := "times-visual-caption",
+        s"Trace $table around a circle of 10 to see the repeating pattern."
+      ),
+      S.svg(
+        cls := "times-waldorf-svg",
+        S.viewBox := "0 0 220 220",
+        S.circle(
+          cls := "times-waldorf-ring",
+          S.cx := "110",
+          S.cy := "110",
+          S.r := "88"
+        ),
+        lines,
+        nodes
+      )
+    )
+  end renderWaldorfFlower
+
+  private def renderRoughDotGroup(dotsInGroup: Int, groupIndex: Int): HtmlElement =
+    import com.raquo.laminar.api.L.svg as S
+    import org.scalajs.dom
+    import roughjs.{Rough, RoughOptions}
+
+    val dotDiameter = 16.0
+    val gap = 8.0
+    val padding = 10.0
+    val rows = Math.ceil(dotsInGroup.toDouble / dotsPerRow).toInt.max(1)
+    val width = (padding * 2) + (dotsPerRow * dotDiameter) + ((dotsPerRow - 1) * gap)
+    val height = (padding * 2) + (rows * dotDiameter) + ((rows - 1) * gap)
+
+    div(
+      S.svg(
+        cls := "times-rough-dots-svg",
+        S.viewBox := f"0 0 $width%.2f $height%.2f",
+        S.style := "width: 100%; height: auto; display: block;",
+        onMountCallback { ctx =>
+          val svgDom = ctx.thisNode.ref.asInstanceOf[dom.SVGSVGElement]
+          svgDom.innerHTML = ""
+          val rough = Rough.svg(svgDom)
+          (0 until dotsInGroup).foreach { dot =>
+            val row = dot / dotsPerRow
+            val col = dot % dotsPerRow
+            val x = padding + (dotDiameter / 2) + col * (dotDiameter + gap)
+            val y = padding + (dotDiameter / 2) + row * (dotDiameter + gap)
+            val opts = new RoughOptions {}
+            opts.fill = palette((groupIndex + dot) % palette.size)
+            opts.stroke = "#334155"
+            opts.strokeWidth = 1.4
+            opts.roughness = 2.1
+            opts.bowing = 1.4
+            opts.fillStyle = "solid"
+            val dotEl = rough.circle(x, y, dotDiameter, opts)
+            svgDom.appendChild(dotEl)
+          }
+        }
+      )
+    )
+  end renderRoughDotGroup
+
   private def renderDots(groupCount: Int, groupSize: Int, title: String): HtmlElement =
     val total = groupCount * groupSize
-    val dots =
-      (0 until groupCount).flatMap { group =>
-        (0 until groupSize).map { _ =>
-          span(
-            cls := "times-dot",
-            styleAttr := s"background: ${palette(group % palette.size)};"
-          )
-        }
-      }
+    val tenGroups = (0 until Math.ceil(total.toDouble / dotsPerTenGroup).toInt).map { group =>
+      val start = group * dotsPerTenGroup
+      val dotsInGroup = Math.min(dotsPerTenGroup, total - start)
+      div(
+        cls := "times-ten-group",
+        div(cls := "times-ten-group-label", s"10s group ${group + 1}"),
+        renderRoughDotGroup(dotsInGroup, group),
+        div(cls := "times-ten-group-range", s"${start + 1}–${start + dotsInGroup}")
+      )
+    }
     div(
       cls := "times-visual-card",
       h4(title),
-      p(cls := "times-visual-caption", s"$groupCount groups of $groupSize dots, wrapped into fives to make subitizing easier."),
-      div(cls := "times-dot-grid", dots.toList),
+      p(
+        cls := "times-visual-caption",
+        s"$groupCount groups of $groupSize dots, chunked into groups of 10 for quick counting."
+      ),
+      div(cls := "times-ten-groups", tenGroups.toList),
       p(cls := "times-visual-total", s"$groupCount × $groupSize = $total")
     )
   end renderDots
@@ -188,18 +305,21 @@ object TimesTablePage:
             if mode == "quiz" then span(s"Quiz mode keeps you in the $table times table with one random fact at a time.")
             else span("Test mode mixes any question from the 1 to 12 times tables.")
           ),
-          h3(cls := "times-question", s"${question.prompt} = ?"),
+          div(
+            cls := "times-question-row",
+            h3(cls := "times-question", s"${question.prompt} ="),
+            input(
+              typ := "number",
+              cls := "times-answer-input times-answer-inline",
+              placeholder := "?",
+              aria.label := "Times table answer",
+              value <-- answerVar.signal,
+              onInput.mapToValue --> answerVar.writer
+            )
+          ),
           p(
             cls := "times-question-help",
             "Type your answer, check it, then use the visuals to see the same multiplication in different ways."
-          ),
-          input(
-            typ := "number",
-            cls := "times-answer-input",
-            placeholder := "Answer",
-            aria.label := "Times table answer",
-            value <-- answerVar.signal,
-            onInput.mapToValue --> answerVar.writer
           ),
           div(
             cls := "times-question-actions",
