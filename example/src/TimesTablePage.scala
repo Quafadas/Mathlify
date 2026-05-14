@@ -54,8 +54,7 @@ object TimesTablePage:
     if mode == "series" then
       answerVar.set("")
       submissionVar.set(None)
-    else
-      resetQuestion(mode)
+    else resetQuestion(mode)
     end if
   end activateMode
 
@@ -113,7 +112,7 @@ object TimesTablePage:
     div(
       cls := "times-visual-card",
       h4(title),
-      p(cls := "times-visual-caption", s"$groupCount groups of $groupSize dots, wrapped into fives to make subitising easier."),
+      p(cls := "times-visual-caption", s"$groupCount groups of $groupSize dots, wrapped into fives to make subitizing easier."),
       div(cls := "times-dot-grid", dots.toList),
       p(cls := "times-visual-total", s"$groupCount × $groupSize = $total")
     )
@@ -186,10 +185,8 @@ object TimesTablePage:
         div(
           Callout(_.variant := "neutral")(
             cls := "times-overview-callout",
-            if mode == "quiz" then
-              span(s"Quiz mode keeps you in the $table times table with one random fact at a time.")
-            else
-              span("Test mode mixes any question from the 1 to 12 times tables.")
+            if mode == "quiz" then span(s"Quiz mode keeps you in the $table times table with one random fact at a time.")
+            else span("Test mode mixes any question from the 1 to 12 times tables.")
           ),
           h3(cls := "times-question", s"${question.prompt} = ?"),
           p(
@@ -262,6 +259,7 @@ object TimesTablePage:
                 onChange.mapToValue.map(_.toIntOption.getOrElse(2).max(1).min(12)) --> Observer[Int] { table =>
                   tableVar.set(table)
                   if modeVar.now() == "quiz" then resetQuestion("quiz")
+                  end if
                 },
                 (1 to 12).map(n => option(value := n.toString, s"$n times table")).toList
               )

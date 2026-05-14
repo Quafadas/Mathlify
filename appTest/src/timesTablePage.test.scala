@@ -18,7 +18,7 @@ class TimesTablePageTest extends PlaywrightTestBase:
     val pattern = raw"(\d+)\s×\s(\d+)\s=\s\?".r
     val answer = text match
       case pattern(left, right) => left.toInt * right.toInt
-      case _                    => fail(s"Could not parse question text: $text")
+      case _                    => fail(s"Could not parse question text \"$text\". Expected format: \"number × number = ?\"")
     page.locator(".times-answer-input").fill(answer.toString)
     page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Check answer")).click()
   end answerCurrentQuestion
