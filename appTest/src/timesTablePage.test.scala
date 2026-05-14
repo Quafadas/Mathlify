@@ -41,7 +41,7 @@ class TimesTablePageTest extends PlaywrightTestBase:
 
     assert(page.locator(".times-feedback-callout").isVisible())
     assertEquals(page.locator(".times-visual-card").count(), 3)
-    assert(page.locator(".times-ten-group-label").first().textContent().contains("10s group"))
+    assert(page.locator(".times-ten-group-label").first().textContent().contains("Group #"))
     assert(page.locator(".times-tip-callout").textContent().contains("Turn-around fact"))
   }
 

@@ -36,6 +36,9 @@ object TimesTablePage:
   )
   private val dotsPerTenGroup = 10
   private val dotsPerRow = 5
+  private val waldorfLabelYOffset = 0.8
+  private val roughDotRoughness = 2.1
+  private val roughDotBowing = 1.4
 
   private def randomFactor(): Int = scala.util.Random.between(1, 13)
 
@@ -143,7 +146,7 @@ object TimesTablePage:
         S.text(
           cls := "times-waldorf-node-label",
           S.x := f"$x%.2f",
-          S.y := f"${y + 0.8}%.2f",
+          S.y := f"${y + waldorfLabelYOffset}%.2f",
           value.toString
         )
       )
@@ -189,7 +192,7 @@ object TimesTablePage:
         S.style := "width: 100%; height: auto; display: block;",
         onMountCallback { ctx =>
           val svgDom = ctx.thisNode.ref.asInstanceOf[dom.SVGSVGElement]
-          svgDom.innerHTML = ""
+          svgDom.replaceChildren()
           val rough = Rough.svg(svgDom)
           (0 until dotsInGroup).foreach { dot =>
             val row = dot / dotsPerRow
@@ -197,11 +200,11 @@ object TimesTablePage:
             val x = padding + (dotDiameter / 2) + col * (dotDiameter + gap)
             val y = padding + (dotDiameter / 2) + row * (dotDiameter + gap)
             val opts = new RoughOptions {}
-            opts.fill = palette((groupIndex + dot) % palette.size)
+            opts.fill = palette(groupIndex % palette.size)
             opts.stroke = "#334155"
             opts.strokeWidth = 1.4
-            opts.roughness = 2.1
-            opts.bowing = 1.4
+            opts.roughness = roughDotRoughness
+            opts.bowing = roughDotBowing
             opts.fillStyle = "solid"
             val dotEl = rough.circle(x, y, dotDiameter, opts)
             svgDom.appendChild(dotEl)
@@ -218,7 +221,7 @@ object TimesTablePage:
       val dotsInGroup = Math.min(dotsPerTenGroup, total - start)
       div(
         cls := "times-ten-group",
-        div(cls := "times-ten-group-label", s"10s group ${group + 1}"),
+        div(cls := "times-ten-group-label", s"Group #${group + 1}"),
         renderRoughDotGroup(dotsInGroup, group),
         div(cls := "times-ten-group-range", s"${start + 1}–${start + dotsInGroup}")
       )
